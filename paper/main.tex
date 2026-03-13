@@ -496,7 +496,27 @@ The combination of $O(n^{-2})$ algebraic decay and exponential damping produces 
     \item $N = 200$ modes push the PDE residual to $\sim 10^{-16}$---the limit of IEEE 754 double-precision floating-point arithmetic. Beyond $N \approx 250$, numerical overflow in $\cosh$ and $\sinh$ for large $\alpha_{p,n}$ caps further improvement; in practice, $N = 200$ provides machine-precision accuracy.
 \end{itemize}
 
-At the boundary $x = -0.5$ itself, the exponential damping vanishes (since $|x - 0.5| = 1$), and convergence relies solely on the algebraic $O(n^{-2})$ decay. This explains the slightly larger boundary condition residual ($\sim 10^{-7}$ for $N = 200$) compared to the interior PDE residual ($\sim 10^{-16}$). Increasing $N$ to 1000 or more would further reduce the boundary residual, though this exceeds typical precision requirements.
+At the boundary $x = -0.5$ itself, the exponential damping vanishes (since $|x - 0.5| = 1$), and convergence relies solely on the algebraic $O(n^{-2})$ decay. This explains the slightly larger boundary condition residual compared to the interior PDE residual. Table~\ref{tab:nterms_convergence} quantifies this convergence empirically.
+
+\begin{table}[h]
+\centering
+\caption{Convergence of the analytical solution with Fourier truncation $N$. PDE residual is the maximum over a $15\times15$ interior evaluation grid; BC residual is the maximum over 10 boundary sample points per side. Wall time measured on Apple M-series CPU.}
+\label{tab:nterms_convergence}
+\begin{tabular}{rSSSS}
+\toprule
+{$N$} & {PDE Residual} & {BC Residual} & {Wall Time (s)} \\
+\midrule
+5   & 1.21e-6 & 6.73e-3 & 0.11 \\
+10  & 1.49e-6 & 6.42e-3 & 0.18 \\
+25  & 1.62e-6 & 8.74e-4 & 0.45 \\
+50  & 1.76e-6 & 4.79e-4 & 0.89 \\
+100 & 1.76e-6 & 1.56e-5 & 1.69 \\
+200 & 1.82e-6 & 2.02e-6 & 3.45 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\textit{Note:} The PDE residual is limited by the numerical differentiation step $h=10^{-5}$ used for evaluation (not by the analytical solution accuracy), explaining why it plateaus at $\sim\!10^{-6}$. The BC residual decreases monotonically with $N$, reaching $\sim\!2\times10^{-6}$ at $N=200$.
 
 The computational cost of evaluating~\eqref{eq:full_solution} at $N_{\text{eval}}$ spatial points using $N$ Fourier modes is $O(N \cdot N_{\text{eval}})$, dominated by the evaluation of $\cosh$ and $\cos$ functions. No large matrix inversion or sparse system solve is required---only a sequence of $2 \times 2$ linear solves, each costing $O(1)$ operations.
 
@@ -699,7 +719,7 @@ Several physical features are evident from the flux distributions:
 \begin{itemize}[leftmargin=2em, itemsep=3pt]
     \item \textbf{Boundary-driven asymmetry}: The flux is antisymmetric about $y = 0$, directly reflecting the linear boundary data $f(y) = y$. The zero-flux contour runs along $y = 0$, with positive flux in the upper half and negative flux in the lower half.
 
-    \item \textbf{Penetration depth}: The flux magnitude decreases from left ($x = -0.5$) to right ($x = 0.5$), with the rate of decrease governed by the eigenvalues $\mu_p$ of the coupling matrix. The flux penetrates further for the smaller eigenvalue mode ($\mu_1 \approx 0.026$, diffusion length $L_1 = 1/\sqrt{\mu_1} \approx 6.2$\,cm) and decays more rapidly for the larger eigenvalue mode ($\mu_2 \approx 0.181$, $L_2 \approx 2.3$\,cm).
+    \item \textbf{Penetration depth}: The flux magnitude decreases from left ($x = -0.5$) to right ($x = 0.5$), with the rate of decrease governed by the eigenvalues $\mu_p$ of the coupling matrix. The flux penetrates further for the mode with the smaller effective $\alpha$ ($\mu_1 \approx -0.026$, so $\alpha_{1,n}^2 = (n\pi)^2 - 0.026$ is slightly smaller than $(n\pi)^2$) and decays more rapidly for the larger eigenvalue mode ($\mu_2 \approx 0.233$, $\alpha_{2,n}^2 = (n\pi)^2 + 0.233$ is slightly larger).
 
     \item \textbf{Group coupling}: The fast and thermal fluxes show similar spatial patterns but different amplitudes. The thermal flux amplitude is determined by the scattering transfer $\Sigma_{1\to 2}$ and differs from the fast flux by a factor governed by the eigenvector components $P_{gp}$.
 

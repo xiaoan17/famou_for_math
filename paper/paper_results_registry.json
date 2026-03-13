@@ -27,20 +27,29 @@
       "timestamp": "2026-03-13"
     },
     "exp-003": {
-      "method": "FEM (Finite Element Method)",
-      "params": {"grid": "101x101", "dof_approx": 20000},
-      "status": "pending",
-      "results": null,
+      "method": "FEM (Bilinear Q1)",
+      "params": {"grid": "101x101", "dof": 20402},
+      "status": "complete",
+      "results": {
+        "max_pde_residual": 9.20e-07,
+        "max_bc_residual": 4.05e-04,
+        "total_time_s": 0.824
+      },
       "script": "baselines/fem/fem_solver.py",
-      "timestamp": null
+      "timestamp": "2026-03-13"
     },
     "exp-004": {
       "method": "Spectral (Chebyshev Collocation)",
-      "params": {"N": 30, "dof": 900},
-      "status": "pending",
-      "results": null,
+      "params": {"N": 30, "dof": 1800},
+      "status": "complete",
+      "results": {
+        "max_pde_residual": 3.64e-04,
+        "max_bc_residual": 8.00e-01,
+        "total_time_s": 0.075,
+        "note": "Large BC residual on left Neumann boundary — potential implementation issue"
+      },
       "script": "baselines/spectral/spectral_solver.py",
-      "timestamp": null
+      "timestamp": "2026-03-13"
     },
     "exp-005": {
       "method": "PINN (Physics-Informed Neural Network)",

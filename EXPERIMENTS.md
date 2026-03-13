@@ -6,8 +6,8 @@
 |--------|--------|-----------------|-----------------|----------|-------------|--------|
 | exp-001 | Analytical (N=200) | 2.81e-16 | 5.03e-07 | 0.017 | 200 Fourier modes | **complete** |
 | exp-002 | FDM 101×101 | 9.07e-05 | 3.97e-04 | 0.134 | 10201 DOF | **complete** |
-| exp-003 | FEM 101×101 | TBD | TBD | TBD | ~20000 DOF | pending |
-| exp-004 | Spectral N=30 | TBD | TBD | TBD | 900 DOF | pending |
+| exp-003 | FEM 101×101 (Q1) | 9.20e-07 | 4.05e-04 | 0.824 | 20402 DOF | **complete** |
+| exp-004 | Spectral N=30 | 3.64e-04 | 8.00e-01 | 0.075 | 1800 DOF | **complete** (BC issue) |
 | exp-005 | PINN | TBD | TBD | TBD | 3×64 MLP | pending |
 
 ## Experiment Details
@@ -47,3 +47,5 @@
 - 2026-03-13: Initial experiment plan created
 - 2026-03-13: exp-001 (Analytical N=200) complete — max PDE res 2.81e-16, max BC res 5.03e-07, 0.017s
 - 2026-03-13: exp-002 (FDM 101x101) complete — max PDE res 9.07e-05, max BC res 3.97e-04, 0.134s
+- 2026-03-13: exp-003 (FEM Q1 101x101) complete — max PDE res 9.20e-07, max BC res 4.05e-04, 0.824s
+- 2026-03-13: exp-004 (Spectral N=30) complete — max PDE res 3.64e-04, max BC res 8.00e-01 (left BC issue), 0.075s

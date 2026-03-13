@@ -49,7 +49,26 @@
 - [ ] PDF compiled and delivered
 
 ## Research Background
-(To be filled by Background Researcher)
+
+### Key References
+- **Foundational textbooks**: Duderstadt & Hamilton (1976) *Nuclear Reactor Analysis*; Stacey (2007) *Nuclear Reactor Physics*; Lamarsh (1966) *Introduction to Nuclear Engineering*
+- **1D analytical solutions**: Lemos et al. (2008) Laplace Transform for two-group slab; Zanette et al. (2018, 2021) modified power method + Fourier sine transform for multigroup 1D/2D eigenvalue problems
+- **2D analytical methods**: Fernandes et al. (Parseval identity, rectangular 2D); El-Ajou et al. (2019) RPSM for multi-group in various geometries; Dion & Bhatt (2013) Fourier expansion for lattice cells
+- **Nodal/semi-analytical**: ANDES solver (Lozano et al., 2008) with ACMFD method; Smith (1983) nodal methods
+- **PINNs for neutron diffusion**: Yang et al. (2023) DEPINN; Liu et al. (2023) PC-GIPMNN; Huang et al. (2024) multi-group decoupling loss; Zhang et al. (2026) R2-PINN; Do et al. (2025) mixed dual form
+- **Neural operators**: Raissi et al. (2019) PINNs foundational paper; Li et al. (2021) FNO; Lu et al. (2021) DeepONet; Lu et al. (2022) comprehensive FNO vs DeepONet comparison
+- **Helmholtz/spectral**: Cosine eigenfunctions for Neumann BCs on rectangular domains (classical); SGF method (Cabral da Silva et al., 2023)
+
+### Research Gap
+No closed-form (non-iterative) analytical solution exists for the **2D coupled two-group neutron diffusion equation with inhomogeneous Neumann boundary conditions**. Existing analytical work is limited to 1D slabs, homogeneous BCs, or iterative power-method schemes. AI4S solvers (PINNs, FNO, DeepONet) lack exact multi-group diffusion benchmarks---they are validated only against numerical references carrying discretization error.
+
+### Technical Approach Summary
+**Fourier-cosine expansion in y** (satisfies homogeneous Neumann on top/bottom) + **eigendecomposition of D^{-1}A** (decouples fast/thermal groups) + **cosh(x) solutions** (satisfies right Neumann BC) + **algebraic coefficient matching at left BC** (inhomogeneous Neumann). Non-iterative, yields machine-precision residuals with N=50-500 Fourier terms.
+
+### Output Files
+- `literature-review.md` — Full structured survey with method comparison matrix
+- `methodology-background.md` — Technical background on Fourier-eigendecomposition derivation
+- `introduction-draft.md` — Introduction section draft (~2 pages, academic style)
 
 ## GitHub Repository
 - **Remote**: `git@github.com:xiaoan17/famou_for_math.git`

@@ -56,13 +56,17 @@ def main():
     phi1_fdm_y = interp1_fdm(pts_y)
 
     # --- Spectral ---
-    # Import and run spectral solver
     from spectral_solver import solve_spectral
     print("Computing Spectral solution...")
     spec = solve_spectral(N=30)
-    # Spectral returns on Chebyshev nodes; interpolate
+    # Spectral x/y go from +0.5 to -0.5; sort for interpolation
+    sx = spec["x"]
+    sy = spec["y"]
+    ix = np.argsort(sx)
+    iy = np.argsort(sy)
+    spec_phi1_sorted = spec["phi1"][np.ix_(ix, iy)]
     interp1_spec = RegularGridInterpolator(
-        (spec["x"], spec["y"]), spec["phi1"], method="cubic",
+        (sx[ix], sy[iy]), spec_phi1_sorted, method="cubic",
         bounds_error=False, fill_value=None
     )
     phi1_spec_x = interp1_spec(pts_x)

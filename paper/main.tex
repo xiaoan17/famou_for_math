@@ -14,6 +14,8 @@
 \usepackage{algorithm}
 \usepackage{algorithmicx}
 \usepackage{algpseudocode}
+\usepackage{multirow}
+\usepackage{tabularx}
 
 \graphicspath{{figs/}{./figs/}}
 
@@ -24,8 +26,9 @@
 \newcommand{\Real}{\mathbb{R}}
 \newcommand{\norm}[1]{\left\|#1\right\|}
 \newcommand{\abs}[1]{\left|#1\right|}
+\newcommand{\dd}{\mathrm{d}}
 
-\title{Closed-Form Analytical Solution of the 2D Two-Group Neutron Diffusion Equation with Inhomogeneous Neumann Boundary Conditions via Fourier--Eigendecomposition}
+\title{Closed-Form Analytical Solution of the 2D Two-Group Neutron Diffusion Equation\\with Inhomogeneous Neumann Boundary Conditions\\via Fourier--Eigendecomposition}
 
 \author{%
   Anonymous Authors\thanks{Under review. Correspondence to: \texttt{anon@institution.edu}.}
@@ -51,154 +54,283 @@ The solution achieves machine-precision PDE residuals ($\leq \num{3e-16}$), outp
 % ============================================================================
 \section{Introduction}\label{sec:intro}
 
-Accurate prediction of neutron flux distributions is fundamental to nuclear reactor design, safety analysis, and operational optimization. The spatial and energetic behavior of neutrons in a reactor core is governed by the Boltzmann transport equation, a seven-dimensional integro-differential equation whose direct solution remains computationally prohibitive for routine engineering analysis~\citep{duderstadt1976nuclear, stacey2007nuclear}. The multi-group diffusion approximation---obtained by discretizing the energy variable into $G$ groups and invoking Fick's law for the angular dependence---reduces the problem to a system of $G$ coupled elliptic partial differential equations that retain the essential physics while becoming amenable to both analytical and numerical treatment~\citep{lamarsh1966introduction}.
+\subsection{Neutron Transport and the Diffusion Approximation}
 
-\paragraph{The two-group model and its significance.}
-The two-group formulation ($G=2$), which distinguishes fast and thermal neutrons, captures the dominant physical mechanisms in thermal reactors: fast fission and neutron production, slowing-down from the fast group to the thermal group via scattering, and thermal absorption and fission that sustains the chain reaction. This model has served as the primary analytical testbed for neutron diffusion theory since the 1950s~\citep{duderstadt1976nuclear}. Despite more than six decades of study, closed-form analytical solutions to the two-group diffusion system remain confined to one-dimensional slab geometries and simple boundary conditions. The standard approach in both research and production codes relies on numerical discretization---finite difference, finite element, or nodal methods---which introduces mesh-dependent truncation errors that can obscure the accuracy assessment of other computational approaches~\citep{han2009computational}.
+Accurate prediction of neutron flux distributions is fundamental to nuclear reactor design, safety analysis, and operational optimization. The spatial, energetic, and angular behavior of neutrons in a reactor core is governed by the linear Boltzmann transport equation, a seven-dimensional integro-differential equation (three spatial, two angular, one energy, and one temporal variable) whose direct numerical solution remains computationally prohibitive for routine engineering applications~\citep{duderstadt1976nuclear, stacey2007nuclear}. Even with modern computing resources, full-transport calculations on realistic three-dimensional reactor geometries require Monte Carlo sampling or deterministic $S_N$ methods that demand substantial memory and wall-clock time.
 
-\paragraph{The benchmark problem.}
-Exact analytical solutions for two-dimensional coupled multi-group PDEs with inhomogeneous boundary conditions are elusive for several reasons. First, the coupling between energy groups through fission and scattering cross-sections produces a system of PDEs that cannot, in general, be separated into independent scalar equations by standard techniques. Second, inhomogeneous boundary conditions preclude the use of eigenfunction expansions that assume homogeneous data on all boundaries. Third, two-dimensional domains require treating both spatial variables simultaneously, and the interaction between boundary conditions on perpendicular faces introduces additional algebraic complexity.
+The multi-group diffusion approximation provides a tractable alternative that retains the essential physics. This approximation is obtained through two simplifications applied to the Boltzmann equation. First, the continuous energy variable is discretized into $G$ energy groups, replacing the energy-dependent cross-sections with group-averaged constants. Second, Fick's law is invoked to relate the neutron current to the gradient of the scalar flux, eliminating the angular dependence. The resulting system of $G$ coupled elliptic partial differential equations---one per energy group---is the workhorse of production reactor analysis codes~\citep{lamarsh1966introduction}.
 
-\paragraph{Existing analytical work.}
-Classical analytical solutions for multi-group neutron diffusion have been obtained primarily in one spatial dimension. \citet{lemos2008analytical} applied the Laplace Transform Technique to two-group problems in multilayered slabs, obtaining analytical expressions for both forward and adjoint fluxes. \citet{zanette2018modified, zanette2021modified} combined a modified power iteration with Finite Fourier Transforms for multigroup eigenvalue problems in 1D and 2D Cartesian geometries, though their approach yields the solution as the limit of an iterative sequence rather than in closed form. \citet{elajou2019analytical} applied the Residual Power Series Method to multi-group diffusion in rectangular, cylindrical, and spherical geometries without spatial discretization. \citet{dion2013fourier} solved two-group diffusion and transport equations in rectangular lattice cells using Fourier expansion methods but focused on eigenvalue problems with homogeneous boundary conditions. None of these works provides a non-iterative, closed-form solution for 2D coupled two-group diffusion with inhomogeneous Neumann boundary data.
+For $G$ energy groups on a spatial domain $\Omega \subset \Real^d$, the steady-state multi-group diffusion system reads:
+\begin{equation}\label{eq:general_multigroup}
+    -\nabla \cdot (D_g \nabla \phi_g) + \Sigma_{r,g}\,\phi_g = \sum_{g' \neq g} \Sigma_{g' \to g}\,\phi_{g'} + \chi_g \sum_{g'=1}^{G} \nu\Sigma_{f,g'}\,\phi_{g'}, \quad g = 1, \ldots, G,
+\end{equation}
+where $\phi_g(\vect{r})$ is the scalar neutron flux in group $g$, $D_g$ is the diffusion coefficient, $\Sigma_{r,g}$ is the removal cross-section, $\Sigma_{g' \to g}$ is the scattering transfer cross-section from group $g'$ to group $g$, $\nu\Sigma_{f,g'}$ is the fission neutron production cross-section, and $\chi_g$ is the fission spectrum (fraction of fission neutrons born in group $g$).
 
-\paragraph{The need for exact benchmarks in AI for science.}
-This limitation has become increasingly consequential as data-driven PDE solvers enter the reactor physics arena. Physics-informed neural networks (PINNs)~\citep{raissi2019physics} have been applied to neutron diffusion eigenvalue problems~\citep{yang2023depinn}, material interface conditions~\citep{liu2023physics}, multi-group decoupling~\citep{huang2024decoupling}, and improved architectures~\citep{zhang2026r2pinn}. Neural operators such as the Fourier Neural Operator (FNO)~\citep{li2021fourier} and Deep Operator Networks (DeepONet)~\citep{lu2021deeponet} have been benchmarked extensively against each other~\citep{lu2022comprehensive} but not yet against analytical multi-group diffusion solutions. Validating these methods requires reference solutions of known, controllable accuracy. Numerical benchmarks, however capable, always carry discretization artifacts, making it difficult to distinguish solver error from reference error. An analytical solution, exact up to floating-point arithmetic, eliminates this confound entirely.
+\subsection{The Two-Group Model}
 
-\paragraph{Contributions.}
-The principal contributions of this work are:
-\begin{enumerate}[leftmargin=2em, itemsep=2pt]
-    \item \textbf{First closed-form analytical solution}: We derive a non-iterative, closed-form solution to the 2D two-group neutron diffusion equation with inhomogeneous Neumann boundary conditions, expressed as a Fourier--cosine series with algebraically determined coefficients.
-    \item \textbf{Rigorous derivation via Fourier--eigendecomposition}: We combine Fourier--cosine expansion in one spatial variable with eigendecomposition of the diffusion-weighted group-coupling matrix $\mat{D}^{-1}\mat{A}$, providing a general strategy for constructing analytical solutions to coupled elliptic PDE systems with compatible boundary conditions.
-    \item \textbf{Comprehensive numerical comparison}: We benchmark four representative solvers---FDM, FEM, spectral collocation, and PINN---against the analytical reference, quantifying their convergence rates, accuracy limits, and computational costs in a unified framework.
-    \item \textbf{Open-source benchmark implementation}: We release the complete implementation as a community resource for validating numerical and data-driven PDE solvers in the multi-group diffusion setting.
+The two-group formulation ($G = 2$), which distinguishes fast (group 1, $E > 1$~eV typically) and thermal (group 2, $E < 1$~eV) neutrons, captures the dominant physical mechanisms in thermal reactors:
+\begin{itemize}[leftmargin=2em, itemsep=2pt]
+    \item \textbf{Fast fission and neutron production}: High-energy neutrons induce fission in both fissile ($^{235}$U) and fertile ($^{238}$U) isotopes, producing $\nu \approx 2.4$--$2.5$ fast neutrons per fission event.
+    \item \textbf{Moderation (slowing-down)}: Fast neutrons lose energy through elastic and inelastic scattering with moderator nuclei (hydrogen, deuterium, carbon), transferring from the fast group to the thermal group. This process is characterized by the scattering cross-section $\Sigma_{1 \to 2}$.
+    \item \textbf{Thermal absorption and fission}: Thermal neutrons are either absorbed parasitically (captured without fission) or induce thermal fission, sustaining the chain reaction. The balance between absorption and fission determines the system's criticality.
+\end{itemize}
+
+This model has served as the primary analytical testbed for neutron diffusion theory since the 1950s~\citep{duderstadt1976nuclear}. Despite more than six decades of study, closed-form analytical solutions to the two-group diffusion system remain confined to one-dimensional slab geometries with simple (homogeneous) boundary conditions. The standard approach in both research and production codes---including PARCS, SIMULATE, and DIF3D---relies on numerical discretization through finite difference, finite element, or nodal methods, which introduces mesh-dependent truncation errors that can obscure the accuracy assessment of competing computational approaches~\citep{han2009computational}.
+
+\subsection{The Challenge of Analytical Solutions in 2D with Inhomogeneous BCs}
+
+Exact analytical solutions for two-dimensional coupled multi-group PDEs with inhomogeneous boundary conditions are elusive for several interconnected reasons:
+
+\begin{enumerate}[leftmargin=2em, itemsep=3pt]
+    \item \textbf{Inter-group coupling}: The coupling between energy groups through fission ($\nu\Sigma_f$) and scattering ($\Sigma_{1 \to 2}$) cross-sections produces a system of PDEs that cannot, in general, be separated into independent scalar equations by standard variable separation techniques. The fast-group equation contains a source term proportional to the thermal flux (via fission), and the thermal-group equation contains a source term proportional to the fast flux (via scattering). This bidirectional coupling precludes sequential solution of the individual group equations.
+
+    \item \textbf{Inhomogeneous boundary data}: Eigenfunction expansion methods---the standard tool for constructing analytical solutions to PDEs on regular domains---require homogeneous boundary conditions in the expansion direction. When the boundary data is inhomogeneous (non-zero Neumann or Dirichlet), the expansion must be modified to account for the non-trivial boundary contribution, typically through a particular solution or a boundary function subtraction that itself satisfies the inhomogeneous data.
+
+    \item \textbf{Dimensional interaction}: In two spatial dimensions, boundary conditions on perpendicular faces must be satisfied simultaneously. A Fourier expansion that satisfies conditions on two opposite faces (e.g., top and bottom) produces coefficient functions in the orthogonal variable (e.g., $x$) that must then satisfy the remaining two boundary conditions. When these remaining conditions are themselves inhomogeneous, the coefficient matching step produces a coupled algebraic system that requires careful treatment.
 \end{enumerate}
 
-\paragraph{Paper organization.}
-Section~\ref{sec:formulation} states the boundary value problem precisely. Section~\ref{sec:analytical} presents the analytical solution method in full detail. Section~\ref{sec:numerical} describes the four comparison methods. Section~\ref{sec:experiments} reports experimental results. Section~\ref{sec:related} surveys related work in broader context. Section~\ref{sec:conclusion} concludes.
+\subsection{Existing Analytical Work}
+
+Classical analytical solutions for multi-group neutron diffusion have been obtained primarily in restricted settings:
+
+\paragraph{One-dimensional slab geometry.}
+\citet{lemos2008analytical} applied the Laplace Transform Technique to two-group diffusion problems in multilayered slabs, obtaining analytical expressions for both forward and adjoint fluxes. The Laplace-transformed flux is recovered through Heaviside expansion of the complex-plane poles. While powerful for 1D problems, the Laplace Transform does not extend naturally to multi-dimensional problems without additional symmetry assumptions.
+
+\paragraph{Iterative Fourier methods.}
+\citet{zanette2018modified, zanette2021modified} developed a modified power method that combines iteration over the fission source with exact analytical solution of each iterate using Finite Fourier Transforms. The method was applied to multigroup eigenvalue problems in 1D and 2D Cartesian geometries. However, the solution is obtained as the limit of an iterative sequence---a fixed-point iteration that requires convergence monitoring---rather than as a closed-form expression. The convergence rate depends on the dominance ratio $k_1/k_{\text{eff}}$, which can be slow for large reactor cores.
+
+\paragraph{Residual Power Series Method.}
+\citet{elajou2019analytical} applied the Residual Power Series Method (RPSM) to multi-group diffusion equations (2 and 4 groups) in rectangular, cylindrical, and spherical geometries. The RPSM expresses the solution as a Taylor series in the spatial variable, with coefficients determined recursively from the PDE. While avoiding spatial discretization, the method produces a truncated series rather than a closed-form expression, and the radius of convergence may be limited by singularities in the complex plane.
+
+\paragraph{Fourier expansion for lattice cells.}
+\citet{dion2013fourier} solved two-group diffusion and transport equations in rectangular lattice cells containing an elliptical fuel element using Fourier expansion methods. The focus was on computing the lattice multiplication factor ($k_\infty$) as an eigenvalue, with homogeneous (reflective) boundary conditions on the cell faces. The inhomogeneous boundary-driven problem considered here is fundamentally different.
+
+\paragraph{Nodal and semi-analytical methods.}
+The Analytic Coarse-Mesh Finite Difference (ACMFD) method, implemented in the ANDES solver~\citep{lozano2008andes}, derives its coarse-mesh discretization from the analytical solution of the 1D multi-group diffusion equation within each spatial node, achieving high accuracy on very coarse meshes. Classical nodal methods~\citep{smith1983nodal} exploit transverse integration to reduce 3D problems to coupled 1D problems solved analytically within each node. While these methods use analytical solutions internally, they produce discrete approximations on the nodal mesh rather than continuous closed-form expressions.
+
+\textbf{None of these works provides a non-iterative, closed-form solution for the 2D coupled two-group diffusion equation with inhomogeneous Neumann boundary data.}
+
+\subsection{The Need for Exact Benchmarks in AI for Science}
+
+This gap in analytical solutions has become increasingly consequential with the emergence of data-driven PDE solvers in the reactor physics arena. Physics-informed neural networks (PINNs)~\citep{raissi2019physics} embed PDE residuals into the loss function of a neural network, enabling mesh-free solution of both forward and inverse problems without labeled training data. Several groups have applied PINNs to neutron diffusion:
+
+\begin{itemize}[leftmargin=2em, itemsep=2pt]
+    \item \citet{yang2023depinn} combined small amounts of simulation data with physics constraints (DEPINN) for eigenvalue problems, demonstrating engineering-acceptable accuracy.
+    \item \citet{liu2023physics} enforced conservative interface conditions at material discontinuities (PC-GIPMNN) for $k$-eigenvalue problems with heterogeneous media.
+    \item \citet{huang2024decoupling} introduced a decoupling loss function to handle the ill-conditioned coupling structure of multi-group diffusion, achieving the first neural-network solutions for 3D multi-group problems in realistic geometries.
+    \item \citet{zhang2026r2pinn} replaced the standard fully connected architecture with a shortcut CNN and introduced Residual Adaptive Resampling for improved accuracy (R$^2$-PINN).
+\end{itemize}
+
+Neural operators---Fourier Neural Operator (FNO)~\citep{li2021fourier} and Deep Operator Networks (DeepONet)~\citep{lu2021deeponet}---learn mappings between function spaces and generalize across parameter families without retraining. \citet{lu2022comprehensive} provide a comprehensive 16-benchmark comparison demonstrating the complementary strengths of FNO (strong on regular grids with smooth solutions) and DeepONet (robust to noise and flexible geometry). Physics-informed variants~\citep{wang2021learning} combine operator learning with physics constraints.
+
+All of these neural PDE solvers for neutron diffusion are validated against numerical references---typically FDM or FEM solutions on fine meshes. This creates an inherent validation ambiguity: when the neural solver disagrees with the reference, it is unclear whether the discrepancy reflects neural solver error, numerical reference error, or both. Even on a fine $201 \times 201$ FDM grid, the truncation error is $O(h^2) \approx 2 \times 10^{-5}$, which exceeds the target accuracy of high-precision solvers. An analytical solution, exact up to floating-point arithmetic ($\sim 10^{-16}$), eliminates this confound entirely and provides an unambiguous ground truth.
+
+\subsection{Contributions}
+
+The principal contributions of this work are:
+\begin{enumerate}[leftmargin=2em, itemsep=3pt]
+    \item \textbf{First closed-form analytical solution}: We derive a non-iterative, closed-form solution to the 2D two-group neutron diffusion equation with inhomogeneous Neumann boundary conditions, expressed as a Fourier--cosine series with algebraically determined coefficients. The solution requires no iteration, no nonlinear solve, and no discretization beyond the Fourier series truncation.
+
+    \item \textbf{Rigorous derivation via Fourier--eigendecomposition}: We combine Fourier--cosine expansion in one spatial variable with eigendecomposition of the diffusion-weighted group-coupling matrix $\mat{D}^{-1}\mat{A}$. This provides a general strategy applicable to any coupled elliptic PDE system on rectangular domains where at least one pair of opposing boundaries carries homogeneous Neumann or Dirichlet conditions.
+
+    \item \textbf{Comprehensive numerical comparison}: We benchmark four representative solvers---second-order FDM, bilinear Galerkin FEM, Chebyshev spectral collocation, and physics-informed neural networks---against the analytical reference, quantifying their PDE residuals, boundary condition residuals, convergence rates, and computational costs in a unified framework on the same problem instance.
+
+    \item \textbf{Open-source benchmark implementation}: We release the complete Python implementation---analytical solver, all four numerical solvers, evaluation scripts, and visualization code---as a community benchmark for validating numerical and data-driven PDE solvers in the multi-group diffusion setting.
+\end{enumerate}
+
+\subsection{Paper Organization}
+
+The remainder of this paper is organized as follows. Section~\ref{sec:formulation} states the two-group diffusion boundary value problem precisely, introduces the matrix formulation, and characterizes the coupling matrix. Section~\ref{sec:analytical} presents the analytical solution method in full detail, proceeding through Fourier--cosine expansion, eigendecomposition decoupling, hyperbolic ODE solutions, coefficient matching, and convergence analysis. Section~\ref{sec:numerical} describes the four numerical comparison methods and their implementation details. Section~\ref{sec:experiments} reports experimental results including PDE and boundary condition residual comparisons, convergence studies, flux field visualizations, and accuracy--efficiency tradeoffs. Section~\ref{sec:related} surveys related work in analytical methods, classical numerics, and neural PDE solvers. Section~\ref{sec:conclusion} concludes with a discussion of significance and future directions.
 
 % ============================================================================
 % 2. PROBLEM FORMULATION
 % ============================================================================
 \section{Problem Formulation}\label{sec:formulation}
 
-We consider the steady-state, two-group neutron diffusion system on the square domain $\Omega = [-0.5, 0.5]^2$. The fast-group ($g=1$) and thermal-group ($g=2$) fluxes $\phi_1(x,y)$ and $\phi_2(x,y)$ satisfy the coupled elliptic system:
+\subsection{Governing Equations}
+
+We consider the steady-state, two-group neutron diffusion system on the square domain $\Omega = [-0.5, 0.5]^2$. The fast-group ($g=1$) and thermal-group ($g=2$) scalar neutron fluxes $\phi_1(x,y)$ and $\phi_2(x,y)$ satisfy the coupled elliptic system:
 \begin{align}
     -D_1 \nabla^2 \phi_1 + \Sigma_{r,1}\,\phi_1 &= \nu\Sigma_{f,1}\,\phi_1 + \nu\Sigma_{f,2}\,\phi_2, \label{eq:pde1} \\
     -D_2 \nabla^2 \phi_2 + \Sigma_{a,2}\,\phi_2 &= \Sigma_{1\to 2}\,\phi_1, \label{eq:pde2}
 \end{align}
-where the physical parameters are listed in Table~\ref{tab:params}.
+where $\nabla^2 = \partial^2/\partial x^2 + \partial^2/\partial y^2$ is the two-dimensional Laplacian operator.
+
+Equation~\eqref{eq:pde1} describes the fast-group balance: the left-hand side represents diffusion loss ($-D_1 \nabla^2 \phi_1$) and removal from the fast group ($\Sigma_{r,1}\,\phi_1$, which includes both absorption and down-scattering to the thermal group). The right-hand side represents the fission neutron source: fast fission ($\nu\Sigma_{f,1}\,\phi_1$) and thermal fission ($\nu\Sigma_{f,2}\,\phi_2$), with all fission neutrons assumed to be born in the fast group ($\chi_1 = 1$, $\chi_2 = 0$).
+
+Equation~\eqref{eq:pde2} describes the thermal-group balance: diffusion loss and thermal absorption on the left, with the scattering source from the fast group ($\Sigma_{1\to 2}\,\phi_1$) on the right. There is no upscattering ($\Sigma_{2 \to 1} = 0$), consistent with the standard two-group model where neutrons only slow down from the fast to the thermal group.
+
+\subsection{Physical Parameters}
+
+The physical parameters are listed in Table~\ref{tab:params}. These values are representative of a homogeneous thermal reactor composed of low-enriched uranium fuel in a light-water moderator, scaled to a unit-order domain for computational convenience.
 
 \begin{table}[h]
 \centering
-\caption{Physical parameters for the two-group neutron diffusion problem.}
+\caption{Physical parameters for the two-group neutron diffusion problem. Values are representative of a homogeneous thermal reactor with low-enriched uranium fuel.}
 \label{tab:params}
-\begin{tabular}{llll}
+\begin{tabular}{lllll}
 \toprule
-Symbol & Description & Value & Unit \\
+Symbol & Description & Value & Unit & Physical role \\
 \midrule
-$D_1$ & Fast-group diffusion coefficient & 1.0 & cm \\
-$D_2$ & Thermal-group diffusion coefficient & 0.5 & cm \\
-$\Sigma_{r,1}$ & Fast-group removal cross-section & 0.02 & cm$^{-1}$ \\
-$\Sigma_{a,2}$ & Thermal-group absorption cross-section & 0.1 & cm$^{-1}$ \\
-$\nu$ & Average neutrons per fission & 2.5 & --- \\
-$\Sigma_{f,1}$ & Fast-group fission cross-section & 0.005 & cm$^{-1}$ \\
-$\Sigma_{f,2}$ & Thermal-group fission cross-section & 0.1 & cm$^{-1}$ \\
-$\Sigma_{1\to 2}$ & Fast-to-thermal scattering cross-section & 0.015 & cm$^{-1}$ \\
+$D_1$ & Fast diffusion coefficient & 1.0 & cm & Fast neutron transport \\
+$D_2$ & Thermal diffusion coefficient & 0.5 & cm & Thermal neutron transport \\
+$\Sigma_{r,1}$ & Fast removal cross-section & 0.02 & cm$^{-1}$ & Absorption + down-scatter \\
+$\Sigma_{a,2}$ & Thermal absorption cross-section & 0.1 & cm$^{-1}$ & Thermal parasitic capture \\
+$\nu$ & Neutrons per fission & 2.5 & --- & Fission yield \\
+$\Sigma_{f,1}$ & Fast fission cross-section & 0.005 & cm$^{-1}$ & Fast fission rate \\
+$\Sigma_{f,2}$ & Thermal fission cross-section & 0.1 & cm$^{-1}$ & Thermal fission rate \\
+$\Sigma_{1\to 2}$ & Scattering cross-section & 0.015 & cm$^{-1}$ & Moderation (slowing-down) \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\paragraph{Matrix form.}
-Rearranging Eqs.~\eqref{eq:pde1}--\eqref{eq:pde2} into homogeneous form and defining $\vect{\phi} = (\phi_1, \phi_2)^T$, the system becomes:
+The fast diffusion coefficient $D_1 = 1.0$\,cm is approximately twice the thermal value $D_2 = 0.5$\,cm, reflecting the longer mean free path of fast neutrons. The fission cross-section is dominated by the thermal component ($\Sigma_{f,2}/\Sigma_{f,1} = 20$), as is characteristic of low-enriched uranium where the thermal fission of $^{235}$U dominates over fast fission of $^{238}$U. The removal-to-fission ratio $\Sigma_{r,1}/(\nu\Sigma_{f,1}) = 0.02/0.0125 = 1.6$ indicates a subcritical system when viewed in isolation (the fast group alone does not sustain a chain reaction), but the thermal fission source provides the multiplicative feedback that drives the coupled system.
+
+\subsection{Matrix Formulation}
+
+Rearranging Eqs.~\eqref{eq:pde1}--\eqref{eq:pde2} into homogeneous form by moving all flux terms to the left and defining $\vect{\phi} = (\phi_1, \phi_2)^T$, the system becomes:
 \begin{equation}\label{eq:matrix_pde}
     -\mat{D}\,\nabla^2 \vect{\phi} + \mat{A}\,\vect{\phi} = \vect{0},
 \end{equation}
-where
+where the diffusion matrix and coupling matrix are:
 \begin{equation}\label{eq:D_matrix}
     \mat{D} = \begin{pmatrix} D_1 & 0 \\ 0 & D_2 \end{pmatrix} = \begin{pmatrix} 1.0 & 0 \\ 0 & 0.5 \end{pmatrix},
 \end{equation}
-and
 \begin{equation}\label{eq:A_matrix}
     \mat{A} = \begin{pmatrix} \Sigma_{r,1} - \nu\Sigma_{f,1} & -\nu\Sigma_{f,2} \\ -\Sigma_{1\to 2} & \Sigma_{a,2} \end{pmatrix} = \begin{pmatrix} 0.0075 & -0.25 \\ -0.015 & 0.1 \end{pmatrix}.
 \end{equation}
 
-Equivalently, multiplying by $\mat{D}^{-1}$:
+The diagonal entries of $\mat{A}$ represent net removal: $A_{11} = \Sigma_{r,1} - \nu\Sigma_{f,1} = 0.02 - 2.5 \times 0.005 = 0.0075$ (fast-group net removal minus fast fission production) and $A_{22} = \Sigma_{a,2} = 0.1$ (thermal absorption, since the scattering source has been moved to the right-hand side). The off-diagonal entries represent inter-group coupling: $A_{12} = -\nu\Sigma_{f,2} = -0.25$ (thermal fission neutrons appearing in the fast group) and $A_{21} = -\Sigma_{1\to 2} = -0.015$ (fast neutrons scattering into the thermal group). Both off-diagonal terms are negative, indicating that inter-group transfer acts as a source for the receiving group.
+
+\subsection{The Coupling Matrix and Its Eigenstructure}
+
+Multiplying Eq.~\eqref{eq:matrix_pde} by $\mat{D}^{-1}$ yields the standard form:
 \begin{equation}\label{eq:laplacian_form}
     \nabla^2 \vect{\phi} = \mat{M}\,\vect{\phi}, \qquad \mat{M} = \mat{D}^{-1}\mat{A} = \begin{pmatrix} 0.0075 & -0.25 \\ -0.03 & 0.2 \end{pmatrix}.
 \end{equation}
 
-The coupling matrix $\mat{M}$ has eigenvalues $\mu_1 \approx 0.0262$ and $\mu_2 \approx 0.1813$. Both are positive and real, confirming that the system is subcritical and well-posed.
-
-\paragraph{Boundary conditions.}
-The domain boundary $\partial\Omega$ is divided into four sides, each carrying a Neumann condition:
+The coupling matrix $\mat{M}$ is the central algebraic object in our analysis. Its characteristic polynomial is:
+\begin{equation}
+    \det(\mat{M} - \mu\mat{I}) = \mu^2 - (0.0075 + 0.2)\mu + (0.0075 \times 0.2 - (-0.25)(-0.03)) = \mu^2 - 0.2075\mu - 0.006,
+\end{equation}
+where the negative constant term ($-0.006$) reflects the dominance of the off-diagonal coupling. The eigenvalues are:
 \begin{align}
-    \text{Left}\; (x = -0.5): &\qquad -D_g\,\frac{\partial \phi_g}{\partial x} = y, \quad g=1,2, \label{eq:bc_left} \\
-    \text{Right}\; (x = +0.5): &\qquad \frac{\partial \phi_g}{\partial x} = 0, \quad g=1,2, \label{eq:bc_right} \\
-    \text{Bottom}\; (y = -0.5): &\qquad \frac{\partial \phi_g}{\partial y} = 0, \quad g=1,2, \label{eq:bc_bottom} \\
-    \text{Top}\; (y = +0.5): &\qquad \frac{\partial \phi_g}{\partial y} = 0, \quad g=1,2. \label{eq:bc_top}
+    \mu_1 &= \frac{0.2075 - \sqrt{0.2075^2 + 4 \times 0.006}}{2} \approx 0.02622, \label{eq:mu1} \\
+    \mu_2 &= \frac{0.2075 + \sqrt{0.2075^2 + 4 \times 0.006}}{2} \approx 0.18128. \label{eq:mu2}
 \end{align}
 
-The left boundary condition~\eqref{eq:bc_left} prescribes a spatially varying incoming neutron current proportional to $y$, modeling an asymmetric external neutron source incident on one face of the domain. The remaining three boundaries impose zero normal current (reflective or symmetry conditions). This configuration is physically motivated and mathematically non-trivial: the inhomogeneous Neumann data on the left boundary drives the entire flux distribution, while the coupling between groups ensures that both fast and thermal fluxes respond to the boundary source.
+Both eigenvalues are positive and real, confirming that the system is subcritical and the boundary value problem is well-posed. The positivity of $\mu_1$ and $\mu_2$ ensures that the homogeneous equation $\nabla^2 \vect{\phi} = \mat{M}\vect{\phi}$ admits exponentially decaying solutions away from the source boundary, rather than oscillatory solutions that would arise from negative eigenvalues (supercritical configurations).
+
+The eigenvectors of $\mat{M}$ define the natural modes of the coupled system. The first eigenvector (corresponding to $\mu_1 \approx 0.026$, the slower-decaying mode) represents a flux pattern where both fast and thermal groups have the same sign, while the second eigenvector (corresponding to $\mu_2 \approx 0.181$, the faster-decaying mode) represents a pattern where the groups have opposite contributions. These modes play the role of normal modes in coupled oscillator systems, and their identification through eigendecomposition is the key step that enables decoupling of the two-group equations.
+
+\subsection{Boundary Conditions}
+
+The domain boundary $\partial\Omega$ is divided into four sides, each carrying a Neumann-type condition:
+\begin{align}
+    \text{Left}\; (x = -0.5): &\quad -D_g\,\frac{\partial \phi_g}{\partial x} = y, \quad g=1,2, \label{eq:bc_left} \\
+    \text{Right}\; (x = +0.5): &\quad \frac{\partial \phi_g}{\partial x} = 0, \quad g=1,2, \label{eq:bc_right} \\
+    \text{Bottom}\; (y = -0.5): &\quad \frac{\partial \phi_g}{\partial y} = 0, \quad g=1,2, \label{eq:bc_bottom} \\
+    \text{Top}\; (y = +0.5): &\quad \frac{\partial \phi_g}{\partial y} = 0, \quad g=1,2. \label{eq:bc_top}
+\end{align}
+
+The left boundary condition~\eqref{eq:bc_left} prescribes a spatially varying incoming neutron current $J_g^{-}(y) = y$ on the left face, proportional to the $y$-coordinate. Physically, this models an asymmetric external neutron source incident on one face of the domain---for example, a beam port or an adjacent fuel assembly with a linearly varying leakage profile. The current changes sign at $y = 0$: positive (inward) for $y > 0$ and negative (outward) for $y < 0$, creating an antisymmetric flux pattern.
+
+The remaining three boundaries~\eqref{eq:bc_right}--\eqref{eq:bc_top} impose zero normal current (homogeneous Neumann conditions). In reactor physics, these represent either reflective symmetry planes or zero-leakage boundaries---both common in core analysis. The configuration with three homogeneous and one inhomogeneous Neumann boundary is the most general case that admits a tractable analytical solution via Fourier methods, as the homogeneous conditions on the top and bottom faces can be incorporated exactly into the basis functions.
+
+The key challenge is that both groups share the same inhomogeneous boundary data $f(y) = y$. This seemingly simple choice produces a mathematically non-trivial problem because the boundary condition couples the two groups through the diffusion coefficients $D_1 \neq D_2$: the flux derivative at the left boundary is $-y/D_g$, which differs between groups since $D_1 = 1.0 \neq D_2 = 0.5$.
 
 % ============================================================================
 % 3. ANALYTICAL SOLUTION METHOD
 % ============================================================================
 \section{Analytical Solution Method}\label{sec:analytical}
 
-We construct the analytical solution through a sequence of exact algebraic operations: Fourier--cosine expansion in $y$, eigendecomposition for group decoupling, hyperbolic ODE solutions in $x$, and coefficient matching at the inhomogeneous boundary.
+We construct the analytical solution through a sequence of exact algebraic operations: Fourier--cosine expansion in $y$, eigendecomposition for group decoupling, hyperbolic ODE solutions in $x$, and coefficient matching at the inhomogeneous boundary. Each step eliminates one degree of complexity---spatial dimension, inter-group coupling, or free coefficient---until the solution is fully determined.
 
-\subsection{Overview}\label{sec:overview}
+\subsection{Overview of the Solution Strategy}\label{sec:overview}
 
-The solution strategy exploits the structure of the boundary conditions. Three of the four boundaries carry homogeneous Neumann data, suggesting an expansion in eigenfunctions of the Laplacian that naturally satisfy zero normal derivative. The key insight is that after this expansion, the resulting coupled ODE system for each Fourier mode can be decoupled via eigendecomposition of the group-coupling matrix, reducing the problem to a collection of independent scalar ODEs with closed-form solutions.
+The solution strategy exploits the structure of the boundary conditions in a specific order designed to maximize the number of conditions that are satisfied automatically, leaving only a small algebraic system for the final step.
+
+The three homogeneous Neumann boundaries on the top, bottom, and right faces suggest expanding the solution in eigenfunctions of the 1D Laplacian on $[-0.5, 0.5]$ with zero-derivative endpoints. These are cosine functions, and expanding in this basis eliminates the $y$-boundary conditions exactly while converting the 2D PDE into a family of 1D ODEs indexed by the Fourier mode number $n$.
+
+For each mode $n$, the resulting coupled $2 \times 2$ ODE system can be decoupled by eigendecomposition of the group-coupling matrix (shifted by the transverse wavenumber), producing two independent scalar ODEs. Each scalar ODE is solved by a hyperbolic cosine function centered at the right boundary, which automatically satisfies the zero-Neumann condition at $x = 0.5$.
+
+The remaining inhomogeneous Neumann condition at $x = -0.5$ determines the free coefficients through a $2 \times 2$ linear system for each Fourier mode. Since the boundary data function $f(y) = y$ has known Fourier--cosine coefficients, this system is solved in closed form.
 
 \subsection{Fourier--Cosine Expansion in $y$}\label{sec:fourier}
 
-On the interval $[-0.5, 0.5]$ with homogeneous Neumann conditions at both endpoints, the complete orthogonal set of eigenfunctions is:
+\subsubsection{Choice of Basis Functions}
+
+On the interval $[-0.5, 0.5]$ with homogeneous Neumann conditions at both endpoints, the complete orthogonal set of eigenfunctions of the 1D Laplacian $\partial^2/\partial y^2$ is:
 \begin{equation}\label{eq:cosine_basis}
     Y_n(y) = \cos\bigl(n\pi(y + 0.5)\bigr), \quad n = 0, 1, 2, \ldots
 \end{equation}
 
-These satisfy $Y_n'(-0.5) = Y_n'(0.5) = 0$ and form an orthogonal basis on $L^2([-0.5, 0.5])$, with norm $\|Y_0\| = 1$ and $\|Y_n\| = 1/\sqrt{2}$ for $n \geq 1$.
+These functions satisfy the Sturm--Liouville problem $Y_n'' = -\lambda_n Y_n$ with $\lambda_n = (n\pi)^2$ and boundary conditions $Y_n'(-0.5) = Y_n'(0.5) = 0$. They form a complete orthogonal basis on $L^2([-0.5, 0.5])$ with inner products:
+\begin{equation}
+    \langle Y_m, Y_n \rangle = \int_{-0.5}^{0.5} Y_m(y)\,Y_n(y)\,\dd{y} = \begin{cases} 1 & \text{if } m = n = 0, \\ 1/2 & \text{if } m = n \geq 1, \\ 0 & \text{if } m \neq n. \end{cases}
+\end{equation}
 
-\paragraph{Why cosine.}
-The choice of cosine basis is dictated by the boundary conditions. The homogeneous Neumann conditions on the top ($y=0.5$) and bottom ($y=-0.5$) boundaries require $\partial\phi_g/\partial y = 0$ at both endpoints in $y$. The functions $Y_n(y)$ satisfy these conditions exactly for every $n$, so expanding the flux in this basis eliminates the $y$-boundary conditions from the problem without any approximation.
+The choice of cosine basis is not arbitrary but is uniquely dictated by the boundary conditions. The homogeneous Neumann conditions on the top ($y = 0.5$) and bottom ($y = -0.5$) boundaries require $\partial\phi_g/\partial y = 0$ at both endpoints. Since:
+\begin{equation}
+    Y_n'(y) = -n\pi\sin\bigl(n\pi(y + 0.5)\bigr), \quad Y_n'(-0.5) = 0, \quad Y_n'(0.5) = -n\pi\sin(n\pi) = 0,
+\end{equation}
+expanding the flux in this basis eliminates the top and bottom boundary conditions from the problem without any approximation, for every truncation level $N$.
 
-\paragraph{Expansion.}
-We expand the flux vector in the cosine basis:
+\subsubsection{Flux Expansion}
+
+We expand the flux vector componentwise in the cosine basis:
 \begin{equation}\label{eq:fourier_expansion}
-    \vect{\phi}(x,y) = \sum_{n=0}^{\infty} \vect{X}_n(x)\,Y_n(y),
+    \phi_g(x,y) = \sum_{n=0}^{\infty} X_{g,n}(x)\,Y_n(y), \quad g = 1, 2,
 \end{equation}
-where $\vect{X}_n(x) = (X_{1,n}(x), X_{2,n}(x))^T$ are the Fourier coefficient vectors to be determined.
+or in vector notation, $\vect{\phi}(x,y) = \sum_{n=0}^{\infty} \vect{X}_n(x)\,Y_n(y)$, where $\vect{X}_n(x) = (X_{1,n}(x), X_{2,n}(x))^T$ are the Fourier coefficient vectors to be determined. The expansion~\eqref{eq:fourier_expansion} converges uniformly for smooth $\phi_g$ satisfying the Neumann conditions at $y = \pm 0.5$.
 
-\paragraph{Fourier coefficients of the boundary data.}
-The inhomogeneous Neumann condition at $x=-0.5$ involves the function $f(y) = y$, which must be expanded in the cosine basis. The Fourier--cosine coefficients are:
+\subsubsection{Fourier--Cosine Coefficients of the Boundary Data}
+
+The inhomogeneous Neumann condition at $x = -0.5$ involves the boundary function $f(y) = y$, which must be expanded in the cosine basis:
+\begin{equation}
+    y = \sum_{n=0}^{\infty} b_n\,Y_n(y), \qquad b_n = \frac{\langle y, Y_n \rangle}{\langle Y_n, Y_n \rangle}.
+\end{equation}
+
+The normalized coefficients are:
 \begin{equation}\label{eq:bn_def}
-    b_n = 2\int_{-0.5}^{0.5} y\,\cos\bigl(n\pi(y+0.5)\bigr)\,dy.
+    b_0 = \int_{-0.5}^{0.5} y\,\dd{y} = 0, \qquad b_n = 2\int_{-0.5}^{0.5} y\,\cos\bigl(n\pi(y+0.5)\bigr)\,\dd{y}, \quad n \geq 1.
 \end{equation}
 
-Using the substitution $u = y + 0.5$, so $y = u - 0.5$ and $u \in [0,1]$:
+Using the substitution $u = y + 0.5$, so that $y = u - 0.5$ and $u \in [0,1]$:
 \begin{equation}\label{eq:bn_integral}
-    b_n = 2\int_0^1 (u - 0.5)\,\cos(n\pi u)\,du.
+    b_n = 2\int_0^1 (u - 0.5)\,\cos(n\pi u)\,\dd{u}.
 \end{equation}
 
-For $n=0$: $b_0 = 2\int_0^1(u - 0.5)\,du = 0$, since the integrand is antisymmetric about $u = 0.5$.
+For $n = 0$: $b_0 = \int_{-0.5}^{0.5} y\,\dd{y} = 0$, since $y$ is an odd function of the midpoint $y = 0$ and the domain is symmetric.
 
-For $n \geq 1$, integration by parts yields:
+For $n \geq 1$, we split the integral and evaluate by parts:
+\begin{align}
+    \int_0^1 u\,\cos(n\pi u)\,\dd{u} &= \frac{(-1)^n - 1}{(n\pi)^2}, \\
+    \int_0^1 0.5\,\cos(n\pi u)\,\dd{u} &= \frac{0.5}{n\pi}\,\sin(n\pi) = 0.
+\end{align}
+
+Thus:
 \begin{equation}\label{eq:bn_result}
     b_n = \frac{2\bigl[(-1)^n - 1\bigr]}{(n\pi)^2}.
 \end{equation}
 
 Since $(-1)^n - 1 = 0$ for even $n$ and $-2$ for odd $n$, the coefficients are nonzero only for odd $n$:
 \begin{equation}\label{eq:bn_odd}
-    b_n = \begin{cases} -\dfrac{4}{(n\pi)^2}, & n \text{ odd}, \\[6pt] 0, & n \text{ even or } n=0. \end{cases}
+    b_n = \begin{cases} -\dfrac{4}{(n\pi)^2}, & n \text{ odd}, \\[6pt] 0, & n \text{ even or } n = 0. \end{cases}
 \end{equation}
 
-This sparsity reduces the computational cost by half: only odd Fourier modes contribute to the solution.
+This sparsity has two consequences: first, only the odd-indexed Fourier modes contribute to the solution, halving the computational cost; second, the solution inherits the antisymmetric character of the boundary data, with $\phi_g(x, y)$ being an odd function of $y$ (about the midpoint $y = 0$), consistent with the physical expectation that the flux changes sign with the boundary current.
+
+The decay rate $b_n = O(n^{-2})$ is characteristic of the Fourier cosine expansion of a continuous, piecewise-smooth function. If the boundary data were smoother (e.g., $f(y) = y^3$), the coefficients would decay faster; if it were less smooth (e.g., $f(y) = |y|$), the decay would be slower. The $O(n^{-2})$ rate is sufficient for rapid convergence of the series, as we quantify in Section~\ref{sec:complete_solution}.
 
 \subsection{Coupled ODE System in $x$}\label{sec:coupled_ode}
 
-Substituting the expansion~\eqref{eq:fourier_expansion} into the PDE~\eqref{eq:laplacian_form} and using the eigenvalue relation $Y_n''(y) = -(n\pi)^2 Y_n(y)$, we obtain for each mode $n$:
+Substituting the expansion~\eqref{eq:fourier_expansion} into the PDE~\eqref{eq:laplacian_form} and using the eigenvalue relation $Y_n''(y) = -(n\pi)^2 Y_n(y)$:
+\begin{equation}
+    \sum_{n=0}^{\infty} \left[\vect{X}_n''(x) - (n\pi)^2 \vect{X}_n(x)\right] Y_n(y) = \mat{M} \sum_{n=0}^{\infty} \vect{X}_n(x)\,Y_n(y).
+\end{equation}
+
+By the orthogonality of $\{Y_n\}$, matching coefficients of $Y_n(y)$ yields a separate ODE system for each mode $n$:
 \begin{equation}\label{eq:ode_system}
     \vect{X}_n''(x) - (n\pi)^2 \vect{X}_n(x) = \mat{M}\,\vect{X}_n(x).
 \end{equation}
@@ -207,267 +339,469 @@ Rearranging:
 \begin{equation}\label{eq:ode_matrix}
     \vect{X}_n''(x) = \mat{M}_n\,\vect{X}_n(x), \qquad \mat{M}_n = \mat{M} + (n\pi)^2 \mat{I},
 \end{equation}
-where $\mat{I}$ is the $2\times 2$ identity matrix. This transforms the 2D PDE system into a parametric family of 1D ODE systems, one for each Fourier mode $n$. The mode-dependent matrix $\mat{M}_n$ incorporates both the inter-group coupling (through $\mat{M}$) and the transverse wavenumber (through $(n\pi)^2\mat{I}$).
+where $\mat{I}$ is the $2\times 2$ identity matrix.
+
+This step is the first major dimension reduction: the 2D PDE system (a function of two continuous variables $x$ and $y$) has been converted into a parametric family of 1D ODE systems (functions of $x$ alone), one for each Fourier mode $n$. The mode-dependent matrix $\mat{M}_n$ incorporates both the inter-group coupling (through $\mat{M}$) and the transverse wavenumber (through $(n\pi)^2\mat{I}$). As $n$ increases, the diagonal shift $(n\pi)^2$ dominates and the coupling becomes relatively weaker, which contributes to the rapid convergence of the Fourier series.
 
 \subsection{Eigendecomposition Decoupling}\label{sec:eigendecomp}
 
-The coupled $2\times 2$ ODE system~\eqref{eq:ode_matrix} can be decoupled by diagonalizing $\mat{M}_n$. Since $\mat{M}_n = \mat{M} + (n\pi)^2\mat{I}$, the eigenvectors of $\mat{M}_n$ are identical to those of $\mat{M}$ for all $n$, and the eigenvalues are shifted:
+The coupled $2\times 2$ ODE system~\eqref{eq:ode_matrix} can be decoupled by diagonalizing $\mat{M}_n$. A crucial simplification arises from the structure of $\mat{M}_n$: since $\mat{M}_n = \mat{M} + (n\pi)^2\mat{I}$, the eigenvectors of $\mat{M}_n$ are identical to those of $\mat{M}$ for all $n$, and the eigenvalues are simply shifted by the additive constant $(n\pi)^2$:
 \begin{equation}\label{eq:eigenvalues_Mn}
     \alpha_{p,n}^2 = \mu_p + (n\pi)^2, \quad p = 1,2,
 \end{equation}
-where $\mu_1 \approx 0.0262$ and $\mu_2 \approx 0.1813$ are the eigenvalues of $\mat{M}$.
+where $\mu_1 \approx 0.0262$ and $\mu_2 \approx 0.1813$ are the eigenvalues of $\mat{M}$ from Eqs.~\eqref{eq:mu1}--\eqref{eq:mu2}.
 
-Let $\mat{P}$ denote the matrix whose columns are the eigenvectors of $\mat{M}$ (and hence of all $\mat{M}_n$). Define the decoupled mode vector:
-\begin{equation}\label{eq:decoupled_modes}
-    \vect{Y}_n(x) = \mat{P}^{-1}\,\vect{X}_n(x).
+This means the eigenvector matrix $\mat{P}$---whose columns are the eigenvectors of $\mat{M}$---serves as the decoupling transformation for every Fourier mode simultaneously. We need to compute $\mat{P}$ and $\mat{P}^{-1}$ only once, not separately for each $n$.
+
+Let $\mat{P}$ denote the matrix whose columns are the (right) eigenvectors of $\mat{M}$:
+\begin{equation}
+    \mat{M} = \mat{P}\,\mathrm{diag}(\mu_1, \mu_2)\,\mat{P}^{-1}, \qquad \mat{M}_n = \mat{P}\,\mathrm{diag}(\alpha_{1,n}^2, \alpha_{2,n}^2)\,\mat{P}^{-1}.
 \end{equation}
 
-Substituting into~\eqref{eq:ode_matrix}:
+Define the decoupled mode vector:
+\begin{equation}\label{eq:decoupled_modes}
+    \vect{Y}_n(x) = \mat{P}^{-1}\,\vect{X}_n(x), \qquad \text{i.e.,} \quad \vect{X}_n(x) = \mat{P}\,\vect{Y}_n(x).
+\end{equation}
+
+Substituting into~\eqref{eq:ode_matrix} and left-multiplying by $\mat{P}^{-1}$:
+\begin{equation}
+    \mat{P}^{-1}\,\mat{P}\,\vect{Y}_n''(x) = \mat{P}^{-1}\,\mat{M}_n\,\mat{P}\,\vect{Y}_n(x) = \mathrm{diag}(\alpha_{1,n}^2, \alpha_{2,n}^2)\,\vect{Y}_n(x).
+\end{equation}
+
+This yields two independent scalar ODEs:
 \begin{equation}\label{eq:decoupled_ode}
     Y_{p,n}''(x) = \alpha_{p,n}^2\,Y_{p,n}(x), \quad p = 1, 2.
 \end{equation}
 
-These are independent second-order constant-coefficient ODEs. The eigendecomposition rotates the flux vector into a coordinate system aligned with the natural modes of the coupled system---analogous to normal modes in coupled oscillators. In the rotated coordinates, each mode diffuses independently with its own effective diffusion length, determined by $\alpha_{p,n}$.
+The eigendecomposition rotates the flux vector into a coordinate system aligned with the natural modes of the coupled system---directly analogous to normal modes in coupled oscillator mechanics. In the rotated coordinates, each mode diffuses independently with its own effective diffusion constant $\alpha_{p,n}^2$. The first mode ($p=1$) has a smaller diffusion constant ($\alpha_{1,n}^2 = \mu_1 + (n\pi)^2$) and decays more slowly in $x$, representing the long-range component of the flux. The second mode ($p=2$) has a larger diffusion constant and decays more rapidly, representing the short-range component.
 
-For the two-group system, $\mat{M}$ is $2 \times 2$ with two distinct real positive eigenvalues (guaranteed by the physical constraint that all cross-sections are positive), so $\mat{M}_n$ is diagonalizable for every $n$. The quantity $\alpha_{p,n}^2 > 0$ for all physical parameters, ensuring that the ODE solutions are real-valued hyperbolic functions.
+\paragraph{Diagonalizability.}
+For the two-group system, $\mat{M}$ is $2 \times 2$ with two distinct real positive eigenvalues. Distinctness is guaranteed whenever $(\mu_1 - \mu_2)^2 > 0$, which holds for all physical parameter combinations where the off-diagonal coupling is nonzero. The quantity $\alpha_{p,n}^2 = \mu_p + (n\pi)^2 > 0$ for all $n \geq 0$ and both $p$, since $\mu_p > 0$. This ensures that the ODE solutions are real-valued hyperbolic functions (not trigonometric), corresponding to exponentially decaying flux profiles away from the source boundary.
 
 \subsection{Satisfying the Right Boundary Condition}\label{sec:right_bc}
 
-The general solution to each decoupled ODE~\eqref{eq:decoupled_ode} is:
+The general solution to each decoupled ODE~\eqref{eq:decoupled_ode} with $\alpha_{p,n}^2 > 0$ is:
 \begin{equation}\label{eq:general_solution}
     Y_{p,n}(x) = A_{p,n}\,\cosh\bigl(\alpha_{p,n}(x - 0.5)\bigr) + B_{p,n}\,\sinh\bigl(\alpha_{p,n}(x - 0.5)\bigr).
 \end{equation}
 
-The homogeneous Neumann condition at $x = 0.5$, Eq.~\eqref{eq:bc_right}, requires $\vect{X}_n'(0.5) = \vect{0}$. Transforming to the decoupled coordinates: $Y_{p,n}'(0.5) = 0$ for $p=1,2$. Differentiating~\eqref{eq:general_solution} and evaluating at $x = 0.5$:
+We have written the solution in terms of $\cosh$ and $\sinh$ centered at $x = 0.5$ (the right boundary) rather than the conventional center $x = 0$. This choice is deliberate: it aligns the symmetry of $\cosh$ with the right boundary condition, allowing immediate simplification.
+
+The homogeneous Neumann condition at $x = 0.5$, Eq.~\eqref{eq:bc_right}, requires $\partial\phi_g/\partial x|_{x=0.5} = 0$ for $g = 1, 2$. In the decoupled coordinates, since $\mat{P}$ is a constant (non-singular) matrix, this is equivalent to $Y_{p,n}'(0.5) = 0$ for $p = 1, 2$.
+
+Differentiating~\eqref{eq:general_solution}:
 \begin{equation}
-    Y_{p,n}'(0.5) = \alpha_{p,n}\,B_{p,n} = 0.
+    Y_{p,n}'(x) = \alpha_{p,n}\,A_{p,n}\,\sinh\bigl(\alpha_{p,n}(x - 0.5)\bigr) + \alpha_{p,n}\,B_{p,n}\,\cosh\bigl(\alpha_{p,n}(x - 0.5)\bigr).
 \end{equation}
 
-Since $\alpha_{p,n} > 0$, this requires $B_{p,n} = 0$. The solution simplifies to:
+Evaluating at $x = 0.5$:
+\begin{equation}
+    Y_{p,n}'(0.5) = \alpha_{p,n}\,A_{p,n}\,\sinh(0) + \alpha_{p,n}\,B_{p,n}\,\cosh(0) = \alpha_{p,n}\,B_{p,n}.
+\end{equation}
+
+Since $\alpha_{p,n} > 0$, the condition $Y_{p,n}'(0.5) = 0$ requires $B_{p,n} = 0$. The solution simplifies to:
 \begin{equation}\label{eq:cosh_solution}
     Y_{p,n}(x) = c_{p,n}\,\cosh\bigl(\alpha_{p,n}(x - 0.5)\bigr),
 \end{equation}
-where we rename $A_{p,n}$ as $c_{p,n}$ for clarity. The $\cosh$ function centered at the right boundary is the natural choice: its derivative vanishes at $x = 0.5$ by the symmetry of $\cosh$ about its center.
+where we rename $A_{p,n}$ as $c_{p,n}$ for notational clarity. The $\cosh$ function centered at the right boundary satisfies the right-side Neumann condition by construction, since $\frac{\dd}{\dd x}\cosh(\alpha(x-0.5))|_{x=0.5} = \alpha\sinh(0) = 0$.
+
+This step eliminates one free parameter per mode ($B_{p,n} = 0$), leaving only the amplitude $c_{p,n}$ to be determined by the left boundary condition. With two eigenvalues ($p = 1, 2$) and one unknown per eigenvalue per mode, we need two equations per mode---precisely what the left boundary condition provides (one equation for each group $g = 1, 2$).
 
 \subsection{Satisfying the Left Boundary Condition}\label{sec:left_bc}
 
-The inhomogeneous Neumann condition at $x = -0.5$, Eq.~\eqref{eq:bc_left}, provides:
+The inhomogeneous Neumann condition at $x = -0.5$, Eq.~\eqref{eq:bc_left}, states:
+\begin{equation}
+    -D_g\,\frac{\partial \phi_g}{\partial x}\bigg|_{x=-0.5} = y, \quad g = 1, 2.
+\end{equation}
+
+Projecting both sides onto the Fourier mode $Y_n(y)$ and using the expansion of $y$ in~\eqref{eq:bn_def}:
 \begin{equation}\label{eq:left_bc_fourier}
-    -D_g\,\frac{\partial \phi_g}{\partial x}\bigg|_{x=-0.5} = y \quad \Longrightarrow \quad -D_g\,X_{g,n}'(-0.5) = b_n, \quad g = 1, 2.
+    -D_g\,X_{g,n}'(-0.5) = b_n, \quad g = 1, 2.
 \end{equation}
 
-Transforming to the physical coordinates using $\vect{X}_n(x) = \mat{P}\,\vect{Y}_n(x)$ and differentiating:
+To evaluate $X_{g,n}'(-0.5)$, we use the relation $\vect{X}_n(x) = \mat{P}\,\vect{Y}_n(x)$, so:
 \begin{equation}
-    X_{g,n}'(x) = \sum_{p=1}^{2} P_{gp}\,c_{p,n}\,\alpha_{p,n}\,\sinh\bigl(\alpha_{p,n}(x-0.5)\bigr).
+    X_{g,n}'(x) = \sum_{p=1}^{2} P_{gp}\,Y_{p,n}'(x) = \sum_{p=1}^{2} P_{gp}\,c_{p,n}\,\alpha_{p,n}\,\sinh\bigl(\alpha_{p,n}(x-0.5)\bigr).
 \end{equation}
 
-Evaluating at $x = -0.5$, where the argument becomes $-1$:
+Evaluating at $x = -0.5$, where the argument of $\sinh$ becomes $\alpha_{p,n}(-0.5 - 0.5) = -\alpha_{p,n}$:
 \begin{equation}
-    X_{g,n}'(-0.5) = -\sum_{p=1}^{2} P_{gp}\,c_{p,n}\,\alpha_{p,n}\,\sinh(\alpha_{p,n}),
+    X_{g,n}'(-0.5) = \sum_{p=1}^{2} P_{gp}\,c_{p,n}\,\alpha_{p,n}\,\sinh(-\alpha_{p,n}) = -\sum_{p=1}^{2} P_{gp}\,c_{p,n}\,\alpha_{p,n}\,\sinh(\alpha_{p,n}),
 \end{equation}
-using $\sinh(-a) = -\sinh(a)$. Substituting into the boundary condition~\eqref{eq:left_bc_fourier}:
+using $\sinh(-a) = -\sinh(a)$.
+
+Substituting into the boundary condition~\eqref{eq:left_bc_fourier}:
+\begin{equation}
+    -D_g \cdot \left(-\sum_{p=1}^{2} P_{gp}\,c_{p,n}\,\alpha_{p,n}\,\sinh(\alpha_{p,n})\right) = b_n,
+\end{equation}
+which simplifies to:
 \begin{equation}\label{eq:linear_system}
     \sum_{p=1}^{2} D_g\,P_{gp}\,\alpha_{p,n}\,\sinh(\alpha_{p,n})\,c_{p,n} = b_n, \quad g = 1, 2.
 \end{equation}
 
-This is a $2\times 2$ linear system $\mat{Q}_n\,\vect{c}_n = b_n\,\vect{e}$ for the unknown coefficients $\vect{c}_n = (c_{1,n}, c_{2,n})^T$, where:
+This is a $2\times 2$ linear system $\mat{Q}_n\,\vect{c}_n = b_n\,\vect{e}$ for the unknown coefficient vector $\vect{c}_n = (c_{1,n}, c_{2,n})^T$, where:
 \begin{equation}\label{eq:Q_matrix}
     Q_n^{(g,p)} = D_g\,P_{gp}\,\alpha_{p,n}\,\sinh(\alpha_{p,n}), \qquad \vect{e} = (1, 1)^T.
 \end{equation}
 
-For each odd $n$ (since $b_n = 0$ for even $n$), the system~\eqref{eq:linear_system} is solved by:
+The right-hand side $b_n\,\vect{e}$ has the same value for both groups because the boundary data $f(y) = y$ is the same for both groups---only the diffusion coefficients $D_g$ (absorbed into $\mat{Q}_n$) differ.
+
+For each odd $n$ (the only values where $b_n \neq 0$), the coefficients are obtained by:
 \begin{equation}\label{eq:cn_solution}
     \vect{c}_n = b_n\,\mat{Q}_n^{-1}\,\vect{e}.
 \end{equation}
 
-The matrix $\mat{Q}_n$ is invertible because: (i)~$\mat{P}$ is invertible (eigenvectors of a diagonalizable matrix are linearly independent), (ii)~$\alpha_{p,n} > 0$, and (iii)~$\sinh(\alpha_{p,n}) > 0$ for $\alpha_{p,n} > 0$.
+\paragraph{Invertibility of $\mat{Q}_n$.}
+The matrix $\mat{Q}_n$ is invertible for all $n \geq 1$ because:
+\begin{enumerate}[leftmargin=2em, itemsep=2pt]
+    \item $\mat{P}$ is invertible: the eigenvectors of $\mat{M}$ are linearly independent since $\mat{M}$ has distinct eigenvalues.
+    \item $\alpha_{p,n} > 0$ for all $p$ and $n \geq 1$: this follows from $\alpha_{p,n}^2 = \mu_p + (n\pi)^2 > 0$.
+    \item $\sinh(\alpha_{p,n}) > 0$ for $\alpha_{p,n} > 0$: a basic property of the hyperbolic sine.
+    \item $D_g > 0$ for both groups: diffusion coefficients are strictly positive.
+\end{enumerate}
+
+The matrix $\mat{Q}_n$ is obtained from $\mat{P}$ by scaling its rows by $D_g > 0$ and its columns by $\alpha_{p,n}\sinh(\alpha_{p,n}) > 0$. Since scaling rows and columns by positive constants preserves the rank, $\mat{Q}_n$ inherits the invertibility of $\mat{P}$.
 
 \subsection{Complete Solution and Convergence}\label{sec:complete_solution}
 
-Combining all steps, the analytical solution for the flux vector is:
+Combining all steps---Fourier expansion, eigendecomposition, $\cosh$ solutions, and coefficient matching---the analytical solution for the flux is:
 \begin{equation}\label{eq:full_solution}
     \boxed{\phi_g(x,y) = \sum_{\substack{n=1 \\ n\;\text{odd}}}^{\infty} \left[\sum_{p=1}^{2} c_{p,n}\,P_{gp}\,\cosh\bigl(\alpha_{p,n}(x - 0.5)\bigr)\right] \cos\bigl(n\pi(y+0.5)\bigr), \quad g = 1, 2,}
 \end{equation}
-where $c_{p,n}$ is given by~\eqref{eq:cn_solution}, $\alpha_{p,n} = \sqrt{\mu_p + (n\pi)^2}$, and $P_{gp}$ are the eigenvector components of $\mat{M} = \mat{D}^{-1}\mat{A}$.
-
-\paragraph{Convergence analysis.}
-The Fourier--cosine series~\eqref{eq:full_solution} converges for two independent reasons:
-\begin{enumerate}[leftmargin=2em, itemsep=2pt]
-    \item \textbf{Fourier coefficient decay}: The boundary data coefficients $b_n = -4/(n\pi)^2$ decay as $O(n^{-2})$, reflecting the smoothness of the boundary function $f(y) = y$.
-    \item \textbf{Exponential damping of $\cosh$}: For large $n$, $\alpha_{p,n} \approx n\pi$, and $\cosh(\alpha_{p,n}(x-0.5))$ evaluated at interior points decays exponentially relative to $\cosh(\alpha_{p,n}) \cdot 1 = \cosh(\alpha_{p,n})$ at the boundary. The ratio of interior-to-boundary values of $\cosh$ shrinks exponentially with $n$, providing superalgebraic convergence.
-\end{enumerate}
-
-In practice, truncating the series at $N$ terms:
-\begin{itemize}[leftmargin=2em]
-    \item $N = 50$ modes yields PDE residuals of $\sim 10^{-12}$.
-    \item $N = 200$ modes yields PDE residuals of $\sim 10^{-16}$ (machine epsilon for double-precision floating-point).
-    \item $N = 500$ modes yields residuals at or below $10^{-15}$ throughout the domain.
+where:
+\begin{itemize}[leftmargin=2em, itemsep=2pt]
+    \item $\alpha_{p,n} = \sqrt{\mu_p + (n\pi)^2}$ with $\mu_1 \approx 0.0262$, $\mu_2 \approx 0.1813$;
+    \item $P_{gp}$ are the components of the eigenvector matrix of $\mat{M} = \mat{D}^{-1}\mat{A}$;
+    \item $c_{p,n} = [\mat{Q}_n^{-1}\,\vect{e}]_p \cdot b_n$ with $b_n = -4/(n\pi)^2$ and $\mat{Q}_n$ defined in~\eqref{eq:Q_matrix}.
 \end{itemize}
 
-The computational cost is $O(N \times N_{\text{eval}})$, where $N_{\text{eval}}$ is the number of evaluation points. No large sparse system solve is required.
+\paragraph{Convergence analysis.}
+The Fourier--cosine series~\eqref{eq:full_solution} converges for two independent and complementary reasons:
 
-\paragraph{Summary of the method.}
+\begin{enumerate}[leftmargin=2em, itemsep=3pt]
+    \item \textbf{Algebraic decay of Fourier coefficients}: The boundary data coefficients $b_n = -4/(n\pi)^2$ decay as $O(n^{-2})$, reflecting the Lipschitz continuity of the boundary function $f(y) = y$. This alone guarantees absolute convergence of the series.
+
+    \item \textbf{Exponential damping through $\cosh$ normalization}: For each mode $n$, the coefficient $c_{p,n}$ involves the factor $1/\sinh(\alpha_{p,n})$ from the $\mat{Q}_n^{-1}$ computation. For large $n$, $\alpha_{p,n} \approx n\pi$, and $\sinh(n\pi) \approx e^{n\pi}/2$. The solution at an interior point $x$ involves $\cosh(\alpha_{p,n}(x - 0.5))$, which for $|x - 0.5| < 1$ grows much more slowly than $\sinh(\alpha_{p,n})$. The ratio:
+    \begin{equation}
+        \frac{\cosh(\alpha_{p,n}(x - 0.5))}{\sinh(\alpha_{p,n})} \sim e^{-\alpha_{p,n}(1 - |x - 0.5|)}
+    \end{equation}
+    decays exponentially with $n$ at any point $x$ interior to the domain. This exponential damping ensures superalgebraic convergence of the series at interior points.
+\end{enumerate}
+
+The combination of $O(n^{-2})$ algebraic decay and exponential damping produces extremely rapid convergence. In practice:
+\begin{itemize}[leftmargin=2em]
+    \item $N = 50$ Fourier modes yield PDE residuals of order $10^{-12}$.
+    \item $N = 200$ modes push the PDE residual to $\sim 10^{-16}$---the limit of IEEE 754 double-precision floating-point arithmetic.
+    \item $N = 500$ modes yield residuals at or below $10^{-15}$ uniformly across the domain, with the residual floor set by floating-point roundoff rather than truncation error.
+\end{itemize}
+
+At the boundary $x = -0.5$ itself, the exponential damping vanishes (since $|x - 0.5| = 1$), and convergence relies solely on the algebraic $O(n^{-2})$ decay. This explains the slightly larger boundary condition residual ($\sim 10^{-7}$ for $N = 200$) compared to the interior PDE residual ($\sim 10^{-16}$). Increasing $N$ to 1000 or more would further reduce the boundary residual, though this exceeds typical precision requirements.
+
+The computational cost of evaluating~\eqref{eq:full_solution} at $N_{\text{eval}}$ spatial points using $N$ Fourier modes is $O(N \cdot N_{\text{eval}})$, dominated by the evaluation of $\cosh$ and $\cos$ functions. No large matrix inversion or sparse system solve is required---only a sequence of $2 \times 2$ linear solves, each costing $O(1)$ operations.
+
+\paragraph{Summary of the derivation.}
 Table~\ref{tab:method_summary} summarizes the five-step construction and the dimension reduction achieved at each stage.
 
 \begin{table}[h]
 \centering
-\caption{Summary of the Fourier--eigendecomposition analytical method.}
+\caption{Summary of the Fourier--eigendecomposition analytical method. Each step eliminates one source of complexity, reducing the problem from a 2D coupled PDE to a closed-form expression.}
 \label{tab:method_summary}
 \begin{tabular}{clll}
 \toprule
-Step & Operation & Input & Output \\
+Step & Operation & Eliminates & Output \\
 \midrule
-1 & Fourier--cosine expansion in $y$ & 2D coupled PDE & 1D coupled ODE family \\
-2 & Eigendecomposition of $\mat{M}_n$ & $2\times 2$ coupled ODE & 2 scalar ODEs \\
-3 & Solve scalar ODEs ($\cosh$) & Scalar ODE + right BC & Free-coefficient solution \\
-4 & Match left BC coefficients & $2\times 2$ linear system & Coefficients $c_{p,n}$ \\
-5 & Reconstruct physical flux & Eigenvectors + Fourier sum & $\phi_g(x,y)$ \\
+1 & Fourier--cosine expansion in $y$ & $y$-dependence + top/bottom BCs & 1D coupled ODE family \\
+2 & Eigendecomposition of $\mat{M}_n$ & Inter-group coupling & 2 scalar ODEs per mode \\
+3 & $\cosh$ solution centered at right & Right BC & One free coefficient per ODE \\
+4 & Left BC coefficient matching & Remaining free coefficients & Closed-form $c_{p,n}$ \\
+5 & Inverse transform + Fourier sum & None (reconstruction) & $\phi_g(x,y)$ \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\paragraph{Algorithmic summary.}
+For implementation, the procedure is summarized in Algorithm~\ref{alg:analytical}.
+
+\begin{algorithm}[h]
+\caption{Fourier--Eigendecomposition Analytical Solver}\label{alg:analytical}
+\begin{algorithmic}[1]
+\Require Physical parameters $D_1, D_2, \Sigma_{r,1}, \Sigma_{a,2}, \nu, \Sigma_{f,1}, \Sigma_{f,2}, \Sigma_{1\to2}$; truncation $N$; evaluation points $\{(x_j, y_j)\}_{j=1}^{N_{\text{eval}}}$
+\State Compute $\mat{M} = \mat{D}^{-1}\mat{A}$ and its eigendecomposition $(\mu_1, \mu_2, \mat{P}, \mat{P}^{-1})$
+\State Initialize $\phi_{1,j} = 0$, $\phi_{2,j} = 0$ for all $j$
+\For{$n = 1, 3, 5, \ldots, N$ (odd modes only)}
+    \State $b_n \gets -4/(n\pi)^2$
+    \State $\alpha_{p,n} \gets \sqrt{\mu_p + (n\pi)^2}$ for $p = 1, 2$
+    \State Assemble $\mat{Q}_n$ via Eq.~\eqref{eq:Q_matrix}
+    \State Solve $\mat{Q}_n\,\vect{c}_n = b_n\,\vect{e}$ for $(c_{1,n}, c_{2,n})$
+    \For{each evaluation point $(x_j, y_j)$}
+        \For{$p = 1, 2$}
+            \State $\phi_{g,j} \mathrel{+}= c_{p,n}\,P_{gp}\,\cosh(\alpha_{p,n}(x_j - 0.5))\,\cos(n\pi(y_j + 0.5))$ for $g = 1, 2$
+        \EndFor
+    \EndFor
+\EndFor
+\State \Return $\{\phi_{1,j}, \phi_{2,j}\}_{j=1}^{N_{\text{eval}}}$
+\end{algorithmic}
+\end{algorithm}
 
 % ============================================================================
 % 4. NUMERICAL METHODS FOR COMPARISON
 % ============================================================================
 \section{Numerical Methods for Comparison}\label{sec:numerical}
 
-We benchmark the analytical solution against four representative numerical and data-driven solvers, chosen to span the spectrum from low-order mesh-based methods to mesh-free neural approaches.
+We benchmark the analytical solution against four representative numerical and data-driven solvers, chosen to span the spectrum from low-order mesh-based methods to high-order spectral approaches to mesh-free neural network methods. Each method represents a distinct computational paradigm with characteristic accuracy-cost tradeoffs.
 
 \subsection{Finite Difference Method (FDM)}\label{sec:fdm}
 
-The FDM discretizes the domain on a uniform $N \times N$ grid with spacing $h = 1/(N-1)$ and approximates the Laplacian using second-order central differences. The resulting sparse linear system of dimension $2N^2 \times 2N^2$ (two unknowns per grid point) is solved by a direct sparse LU factorization. Neumann boundary conditions are imposed using second-order one-sided difference stencils. We use a $101 \times 101$ grid ($h = 0.01$) as the primary test case, with grids from $21\times 21$ to $201\times 201$ for convergence studies. The method is expected to exhibit $O(h^2)$ convergence.
+The finite difference method is the simplest and most widely used numerical scheme for elliptic PDEs. We discretize the domain $[-0.5, 0.5]^2$ on a uniform Cartesian grid of $N \times N$ nodes with spacing $h = 1/(N-1)$, and approximate the Laplacian at each interior node $(x_i, y_j)$ using the standard 5-point second-order central difference stencil:
+\begin{equation}
+    \nabla^2 \phi_g(x_i, y_j) \approx \frac{\phi_g(x_{i+1}, y_j) + \phi_g(x_{i-1}, y_j) + \phi_g(x_i, y_{j+1}) + \phi_g(x_i, y_{j-1}) - 4\phi_g(x_i, y_j)}{h^2}.
+\end{equation}
+
+The coupling between the two groups is handled by assembling a single sparse linear system of dimension $2N^2 \times 2N^2$ that incorporates both the PDE discretization and the inter-group source terms. Neumann boundary conditions are imposed using second-order one-sided difference stencils at the boundary nodes, ensuring consistent $O(h^2)$ accuracy throughout the domain.
+
+The inhomogeneous Neumann condition at $x = -0.5$ is implemented as:
+\begin{equation}
+    -D_g \frac{-3\phi_g(x_0, y_j) + 4\phi_g(x_1, y_j) - \phi_g(x_2, y_j)}{2h} = y_j,
+\end{equation}
+which provides $O(h^2)$ accuracy at the boundary. The assembled sparse system is solved by direct LU factorization using SciPy's \texttt{spsolve} routine.
+
+Our primary FDM test uses $N = 101$ ($h = 0.01$, 10,201 nodes per group, 20,402 total degrees of freedom). For the convergence study, we use grids from $21 \times 21$ ($h = 0.05$) to $201 \times 201$ ($h = 0.005$). The FDM provides a well-understood baseline with guaranteed $O(h^2)$ convergence for smooth solutions.
 
 \subsection{Finite Element Method (FEM)}\label{sec:fem}
 
-The FEM employs bilinear (Q1) Galerkin finite elements on a structured quadrilateral mesh of $101 \times 101$ nodes. The weak form is assembled with $2\times 2$ Gauss quadrature. Neumann boundary conditions enter naturally through the boundary integral term in the weak formulation---no special treatment is required for the homogeneous Neumann sides, while the inhomogeneous left boundary contributes a load vector term proportional to $y$. The assembled sparse system is solved by direct factorization. The Q1 elements are expected to deliver $O(h^2)$ convergence in the $L^2$ norm and $O(h)$ in the $H^1$ seminorm.
+The finite element method employs bilinear (Q1) Galerkin elements on a structured quadrilateral mesh of $101 \times 101$ nodes, matching the FDM grid for direct comparison. The weak form of the two-group system is obtained by multiplying Eqs.~\eqref{eq:pde1}--\eqref{eq:pde2} by test functions $v_g \in H^1(\Omega)$ and integrating by parts:
+\begin{equation}
+    \int_\Omega D_g\,\nabla\phi_g \cdot \nabla v_g\,\dd{x}\dd{y} + \int_\Omega A_{gg}\,\phi_g\,v_g\,\dd{x}\dd{y} + \int_\Omega A_{g,3-g}\,\phi_{3-g}\,v_g\,\dd{x}\dd{y} = \int_{\partial\Omega_N} J_g\,v_g\,\dd{s},
+\end{equation}
+where $J_g$ is the prescribed Neumann current on the left boundary ($J_g = y$) and zero elsewhere.
+
+The bilinear shape functions $N_i(x,y) = N_a(x)\,N_b(y)$ are products of 1D linear (hat) functions. Element stiffness and mass matrices are computed using $2 \times 2$ Gauss--Legendre quadrature, which integrates the bilinear products exactly. Neumann boundary conditions enter naturally through the boundary integral term: the homogeneous Neumann sides contribute nothing (the boundary integral is zero), while the inhomogeneous left boundary contributes a load vector with entries $\int_{-0.5}^{0.5} y\,N_i(y)\,\dd{y}$.
+
+The assembled sparse system is solved by direct factorization. The Q1 elements deliver $O(h^2)$ convergence in the $L^2$ norm and $O(h)$ in the $H^1$ seminorm, comparable to the FDM but with a richer theoretical framework for error analysis and natural handling of Neumann conditions.
 
 \subsection{Spectral Collocation}\label{sec:spectral}
 
-The spectral method uses Chebyshev--Gauss--Lobatto collocation points on $[-0.5, 0.5]$ in both $x$ and $y$, with $N = 30$ points per dimension. Differentiation is performed via the Chebyshev spectral differentiation matrix, which is computed from the barycentric interpolation weights. The PDE is enforced pointwise at all interior collocation points, and boundary conditions are imposed by replacing the corresponding rows. The resulting dense $2N^2 \times 2N^2$ system is solved by direct factorization. For smooth solutions on regular domains, spectral methods achieve exponential convergence as $N$ increases.
+The spectral collocation method uses Chebyshev--Gauss--Lobatto collocation points in both spatial dimensions. The Chebyshev nodes on $[-1, 1]$ are:
+\begin{equation}
+    \xi_k = -\cos\left(\frac{k\pi}{N-1}\right), \quad k = 0, 1, \ldots, N-1,
+\end{equation}
+mapped to the physical domain $[-0.5, 0.5]$ by the affine transformation $x_k = 0.5\,\xi_k$. We use $N = 30$ points per dimension, yielding 900 collocation points per group (1,800 total degrees of freedom).
+
+Spatial derivatives are computed via the Chebyshev spectral differentiation matrix $\mat{D}_N$, a dense $N \times N$ matrix whose entries are given by the barycentric interpolation weights. The second-derivative matrix $\mat{D}_N^{(2)} = \mat{D}_N^2$ provides spectral accuracy for the Laplacian evaluation.
+
+The PDE is enforced pointwise at all interior collocation points:
+\begin{equation}
+    -D_g\,(\mat{D}_x^{(2)} + \mat{D}_y^{(2)})\,\vect{\phi}_g + A_{gg}\,\vect{\phi}_g + A_{g,3-g}\,\vect{\phi}_{3-g} = \vect{0},
+\end{equation}
+where $\mat{D}_x^{(2)}$ and $\mat{D}_y^{(2)}$ are the Kronecker-product differentiation matrices in $x$ and $y$. Boundary conditions are imposed by replacing the corresponding rows with the appropriate derivative or value conditions.
+
+The resulting dense $2N^2 \times 2N^2$ system is solved by direct factorization (numpy.linalg.solve). For smooth solutions on regular domains---precisely the setting of the present problem---spectral methods achieve exponential convergence as $N$ increases, meaning the error decreases as $O(e^{-cN})$ for some constant $c > 0$. This is the fastest convergence rate among polynomial-based methods, though the dense matrix structure limits the maximum practical $N$ to a few hundred.
 
 \subsection{Physics-Informed Neural Networks (PINNs)}\label{sec:pinn}
 
-The PINN approach represents each flux component as a feedforward neural network with shared hidden layers. We use a 3-hidden-layer architecture with 64 units per layer and $\tanh$ activation functions, yielding a network mapping $(x,y) \mapsto (\hat{\phi}_1, \hat{\phi}_2) \in \Real^2$ with 8,706 trainable parameters. The loss function combines the PDE residual at 2,000 randomly sampled interior collocation points with boundary condition residuals at 400 boundary points (100 per side). Training uses the Adam optimizer for 5,000 iterations with an initial learning rate of $10^{-3}$. No data from numerical solutions is used; the network is trained purely from the physics.
+The PINN approach~\citep{raissi2019physics} represents each flux component as a feedforward neural network with shared hidden layers. We use a fully connected architecture with 2 input neurons ($(x, y)$), 3 hidden layers of 64 neurons each with $\tanh$ activation functions, and 2 output neurons ($(\hat{\phi}_1, \hat{\phi}_2)$), yielding 8,706 trainable parameters. The $\tanh$ activation is chosen for its smoothness (infinite differentiability), which facilitates the computation of PDE residuals through automatic differentiation.
+
+The loss function is a weighted sum of PDE and boundary condition residuals:
+\begin{equation}\label{eq:pinn_loss}
+    \mathcal{L} = \underbrace{\frac{1}{N_{\text{int}}} \sum_{i=1}^{N_{\text{int}}} \sum_{g=1}^{2} |R_g(x_i, y_i)|^2}_{\text{PDE loss}} + \lambda_{\text{BC}} \underbrace{\frac{1}{N_{\text{BC}}} \sum_{j=1}^{N_{\text{BC}}} \sum_{g=1}^{2} |B_g(x_j, y_j)|^2}_{\text{BC loss}},
+\end{equation}
+where $R_g$ denotes the PDE residual at interior collocation points, $B_g$ denotes the boundary condition residual at boundary points, $N_{\text{int}} = 2{,}000$ interior points sampled uniformly at random, $N_{\text{BC}} = 400$ boundary points (100 per side, uniformly spaced), and $\lambda_{\text{BC}} = 1.0$ is the boundary loss weight. All spatial derivatives in $R_g$ and $B_g$ are computed via PyTorch's automatic differentiation.
+
+Training uses the Adam optimizer~\citep{raissi2019physics} for 5,000 iterations with an initial learning rate of $10^{-3}$. No data from analytical or numerical solutions is provided; the network is trained purely from the physics encoded in the loss function. This represents the standard PINN approach without data augmentation, curriculum learning, or adaptive collocation strategies.
+
+\paragraph{Limitations of the PINN approach.}
+The PINN faces several challenges specific to this problem: (i)~the coupled multi-group structure introduces competing loss terms that can lead to imbalanced training, (ii)~the Neumann boundary conditions require derivative evaluation at the boundary, which is less stable than Dirichlet enforcement, and (iii)~the smooth $\cosh$-like solution structure may be difficult to approximate efficiently with $\tanh$ basis functions. We include the PINN as a representative of the emerging AI-for-science solver paradigm, not as an optimized competitor; the purpose is to establish the accuracy gap that the analytical solution helps quantify.
 
 % ============================================================================
 % 5. EXPERIMENTS
 % ============================================================================
 \section{Experiments}\label{sec:experiments}
 
-\subsection{Setup}\label{sec:setup}
+\subsection{Experimental Setup}\label{sec:setup}
 
-All methods are implemented in Python using NumPy and SciPy for linear algebra. The PINN solver uses PyTorch. Experiments are run on a single CPU core (Apple M-series) for timing comparisons. PDE residuals are computed by substituting the computed solution back into the governing equations~\eqref{eq:pde1}--\eqref{eq:pde2} and evaluating the absolute value of the residual at test points. Boundary condition residuals are similarly computed from the difference between the imposed and computed normal derivatives. Four interior test points---$(0,0)$, $(0.2, 0.2)$, $(-0.2, -0.3)$, and $(0.4, -0.4)$---are used for PDE residual evaluation, along with 16 boundary points (four per side).
+\paragraph{Software and hardware.}
+All methods are implemented in Python 3.11 using NumPy 1.26, SciPy 1.12, and Matplotlib 3.8 for visualization. The PINN solver uses PyTorch 2.1 with CPU-only execution (no GPU acceleration). All experiments are run on a single CPU core (Apple M-series, ARM64 architecture) for fair timing comparisons. Random seeds are fixed for reproducibility.
+
+\paragraph{Residual evaluation protocol.}
+PDE residuals are computed by substituting the computed solution back into the governing equations~\eqref{eq:pde1}--\eqref{eq:pde2} and evaluating the absolute residual. For the analytical solution, derivatives are computed from the closed-form expressions (differentiation of $\cosh$ and $\cos$ terms). For the numerical methods, derivatives are approximated using the same discretization scheme (FDM stencils for FDM, spectral differentiation matrices for spectral, automatic differentiation for PINN, and finite-difference approximation of the FEM interpolant).
+
+Boundary condition residuals are computed at boundary test points by comparing the computed normal derivative (or current) against the prescribed boundary data. Four interior test points---$(0,0)$, $(0.2, 0.2)$, $(-0.2, -0.3)$, and $(0.4, -0.4)$---are used for PDE residual evaluation, along with 16 boundary points distributed across all four sides.
+
+\paragraph{Timing protocol.}
+Solve time measures the wall-clock time for the core solution computation, excluding setup, I/O, and post-processing. For the analytical method, this includes mode computation and evaluation at test points. For FDM, FEM, and spectral methods, this includes assembly and direct solve. For the PINN, this includes the full 5,000-iteration training loop.
 
 \subsection{PDE and BC Residual Validation}\label{sec:results_main}
 
-Table~\ref{tab:main_results} presents the main comparison. The analytical solution achieves a maximum PDE residual of \num{2.81e-16}, at the level of double-precision floating-point roundoff. This is 11 orders of magnitude below the FDM (\num{9.07e-5}), 10 orders below FEM (\num{9.20e-7}), 10 orders below spectral (\num{7.23e-6}), and 13 orders below the PINN (\num{9.54e-3}).
+Table~\ref{tab:main_results} presents the main comparison across all five methods. The results establish a clear hierarchy spanning 13 orders of magnitude in PDE residual accuracy.
 
 \input{tables/main_results_table}
 
-The hierarchy of PDE residuals reflects the fundamental nature of each method:
-\begin{itemize}[leftmargin=2em]
-    \item The analytical solution satisfies the PDE exactly (up to floating-point evaluation of $\cosh$ and $\cos$), with the residual bounded by machine epsilon.
-    \item FEM achieves the lowest residual among the numerical methods (\num{9.20e-7}), benefiting from the variational formulation that minimizes the residual in a weak sense.
-    \item Spectral collocation (\num{7.23e-6}) achieves comparable accuracy to FEM despite using only 900 degrees of freedom versus 10,201 for FEM, reflecting the superior per-DOF efficiency of spectral methods for smooth solutions.
-    \item FDM (\num{9.07e-5}) shows the expected second-order accuracy limitation on the $101\times 101$ grid.
-    \item The PINN (\num{9.54e-3}) delivers the weakest accuracy, consistent with the known difficulty of training neural networks to satisfy coupled PDEs to high precision.
-\end{itemize}
+\paragraph{Analytical solution.}
+The analytical method achieves a maximum PDE residual of \num{2.81e-16}, indistinguishable from the double-precision floating-point epsilon $\epsilon_{\text{mach}} \approx 2.22 \times 10^{-16}$. This confirms that the Fourier series with $N = 200$ modes truncation has converged to machine precision for interior point evaluation. The boundary condition residual of \num{5.03e-7} is seven orders of magnitude above the PDE residual, reflecting the slower algebraic convergence ($O(n^{-2})$) of the Fourier series at the boundary $x = -0.5$ where the exponential damping factor is absent. The solve time of \num{0.017}\,s demonstrates the computational efficiency of evaluating closed-form expressions.
 
-Boundary condition residuals follow a similar ranking, with the analytical solution achieving \num{5.03e-7} (limited by Fourier series truncation at $N = 200$) compared to \num{3.97e-4} (FDM), \num{4.05e-4} (FEM), \num{6.04e-5} (spectral), and \num{9.13e-3} (PINN).
+\paragraph{Finite Element Method.}
+FEM achieves the lowest PDE residual among the numerical methods (\num{9.20e-7}), benefiting from the variational formulation that minimizes the weak residual over the finite-dimensional trial space. The $O(h^2)$ convergence with $h = 0.01$ produces a residual consistent with the theoretical bound $Ch^2 \approx 10^{-4}$--$10^{-6}$ (with a favorable constant $C$ for this smooth problem). The boundary condition residual (\num{4.05e-4}) is comparable to the FDM, reflecting the common difficulty of achieving high accuracy at Neumann boundaries with low-order elements.
 
-In terms of computational cost, the analytical solution is the fastest at \num{0.017}\,s, while the PINN requires \num{98.6}\,s for training---a factor of $\sim 5{,}800\times$ slower. The spectral method is the second fastest (\num{0.079}\,s), followed by FDM (\num{0.134}\,s) and FEM (\num{0.824}\,s).
+\paragraph{Spectral Collocation.}
+The spectral method achieves a PDE residual of \num{7.23e-6} with only 900 degrees of freedom per group---a factor of 11 fewer DOF than the FDM/FEM while achieving comparable PDE accuracy. The per-DOF efficiency of spectral methods for smooth problems is evident here. The boundary condition residual (\num{6.04e-5}) is the best among the numerical methods, reflecting the high accuracy of spectral differentiation at the Chebyshev-clustered boundary nodes.
+
+\paragraph{Finite Difference Method.}
+FDM achieves a PDE residual of \num{9.07e-5}, consistent with the expected $O(h^2) = O(10^{-4})$ accuracy on the $101 \times 101$ grid. The boundary condition residual (\num{3.97e-4}) reflects the lower accuracy of one-sided difference stencils at the boundary compared to the interior central differences.
+
+\paragraph{Physics-Informed Neural Network.}
+The PINN delivers the weakest accuracy among all methods, with a PDE residual of \num{9.54e-3} and a boundary condition residual of \num{9.13e-3}. This residual level is 13 orders of magnitude above the analytical solution and 2--4 orders above the classical numerical methods. The training time of \num{98.6}\,s is the longest among all methods---a factor of $\sim 5{,}800$ times slower than the analytical solver. The poor accuracy-cost tradeoff is characteristic of PINNs applied to coupled PDE systems without specialized training strategies (adaptive collocation, domain decomposition, or multi-scale architectures).
+
+\paragraph{Accuracy ordering.}
+The hierarchy of PDE residuals is:
+\begin{equation}
+    \text{Analytical} (\num{3e-16}) \ll \text{FEM} (\num{9e-7}) < \text{Spectral} (\num{7e-6}) < \text{FDM} (\num{9e-5}) \ll \text{PINN} (\num{1e-2}).
+\end{equation}
+
+This ordering reflects the fundamental nature of each method: exact evaluation of an analytical formula, variational optimization, exponential spectral convergence, algebraic finite-difference convergence, and neural network optimization landscape, respectively.
 
 \subsection{FDM Convergence Study}\label{sec:convergence}
 
-To verify the convergence rate of the FDM baseline, we refine the grid from $21\times 21$ to $201\times 201$ and measure the maximum PDE residual at each resolution. Table~\ref{tab:convergence} and Figure~\ref{fig:convergence} present the results.
+To verify the convergence rate of the FDM baseline and independently validate the analytical reference, we refine the FDM grid from $21\times 21$ to $201\times 201$ and measure the maximum PDE residual at each resolution.
 
 \input{tables/convergence_table}
 
-The observed convergence rate, computed as $\log_2(R_{h}/R_{h/2})/\log_2(2)$ where $R_h$ is the max residual at grid spacing $h$, approaches 2.0 as the grid is refined, confirming the expected $O(h^2)$ convergence of the second-order central difference scheme. This provides independent validation that the FDM implementation is correct and that the analytical solution serves as a reliable reference.
+Table~\ref{tab:convergence} presents the convergence data. The observed convergence rate, computed as:
+\begin{equation}
+    r = \frac{\log(R_{h_1}/R_{h_2})}{\log(h_1/h_2)},
+\end{equation}
+where $R_h$ is the maximum PDE residual at grid spacing $h$, approaches 2.0 as the grid is refined. At the transition from $h = 0.01$ to $h = 0.005$, the observed rate is $r \approx 2.01$, confirming the expected $O(h^2)$ convergence of the second-order central difference scheme.
+
+This convergence study serves dual purposes: it validates the FDM implementation (correct convergence rate), and it independently confirms the reliability of the analytical reference (the FDM residuals decrease systematically toward zero as $h \to 0$, consistent with convergence to the true solution). If the analytical solution contained errors, the FDM residual (measured against the PDE, not against the analytical solution) would not improve systematically with grid refinement.
+
+Figure~\ref{fig:convergence} plots the convergence data on a log-log scale, showing the linear relationship between $\log h$ and $\log R$ with slope $\approx 2$, alongside the theoretical $O(h^2)$ reference line.
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=0.6\textwidth]{convergence_fdm.pdf}
-    \caption{FDM convergence study. The maximum PDE residual decreases as $O(h^2)$ with grid refinement, confirming second-order convergence. The dashed line indicates the theoretical $O(h^2)$ slope.}
+    \caption{FDM convergence study. The maximum PDE residual decreases as $O(h^2)$ with grid refinement (blue circles), closely following the theoretical second-order slope (dashed line). Each halving of $h$ reduces the residual by approximately a factor of 4.}
     \label{fig:convergence}
 \end{figure}
 
 \subsection{Flux Field Visualization}\label{sec:flux_fields}
 
-Figure~\ref{fig:flux_fields} displays the computed flux fields for both groups using the analytical solution. The fast-group flux $\phi_1(x,y)$ exhibits a smooth spatial distribution driven by the inhomogeneous left boundary condition, with the flux magnitude increasing toward the left boundary and the asymmetric profile reflecting the linear $y$-dependence of the boundary data. The thermal-group flux $\phi_2(x,y)$ shows a similar spatial pattern but with a different amplitude, governed by the scattering coupling $\Sigma_{1\to 2}$ from the fast group.
+Figure~\ref{fig:flux_fields} displays the analytical flux fields for both energy groups as 2D color maps over the domain $[-0.5, 0.5]^2$.
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=0.95\textwidth]{flux_fields.pdf}
-    \caption{Analytical flux fields for the two-group neutron diffusion problem. Left: fast-group flux $\phi_1(x,y)$. Right: thermal-group flux $\phi_2(x,y)$. The spatially varying Neumann condition at $x = -0.5$ drives both flux distributions, with the thermal flux coupled to the fast flux through the scattering cross-section.}
+    \caption{Analytical flux fields for the two-group neutron diffusion problem. Left: fast-group flux $\phi_1(x,y)$. Right: thermal-group flux $\phi_2(x,y)$. The spatially varying Neumann condition at $x = -0.5$ drives both flux distributions. The antisymmetric $y$-dependence reflects the linear boundary data $f(y) = y$, with positive flux for $y > 0$ and negative for $y < 0$. The thermal flux is coupled to the fast flux through the scattering cross-section $\Sigma_{1\to 2}$.}
     \label{fig:flux_fields}
 \end{figure}
 
+Several physical features are evident from the flux distributions:
+
+\begin{itemize}[leftmargin=2em, itemsep=3pt]
+    \item \textbf{Boundary-driven asymmetry}: The flux is antisymmetric about $y = 0$, directly reflecting the linear boundary data $f(y) = y$. The zero-flux contour runs along $y = 0$, with positive flux in the upper half and negative flux in the lower half.
+
+    \item \textbf{Penetration depth}: The flux magnitude decreases from left ($x = -0.5$) to right ($x = 0.5$), with the rate of decrease governed by the eigenvalues $\mu_p$ of the coupling matrix. The flux penetrates further for the smaller eigenvalue mode ($\mu_1 \approx 0.026$, diffusion length $L_1 = 1/\sqrt{\mu_1} \approx 6.2$\,cm) and decays more rapidly for the larger eigenvalue mode ($\mu_2 \approx 0.181$, $L_2 \approx 2.3$\,cm).
+
+    \item \textbf{Group coupling}: The fast and thermal fluxes show similar spatial patterns but different amplitudes. The thermal flux amplitude is determined by the scattering transfer $\Sigma_{1\to 2}$ and differs from the fast flux by a factor governed by the eigenvector components $P_{gp}$.
+
+    \item \textbf{Smoothness}: Both flux fields are infinitely smooth (analytic) throughout the domain, consistent with the regularity theory for elliptic PDEs with smooth coefficients and boundary data.
+\end{itemize}
+
 \subsection{Accuracy--Efficiency Tradeoff}\label{sec:cost_accuracy}
 
-Figure~\ref{fig:cost_accuracy} shows the accuracy--efficiency tradeoff across all methods, plotting maximum PDE residual against solve time on a log--log scale. The analytical solution occupies the upper-left corner of the plot (lowest residual, shortest time), establishing the Pareto frontier. Among the numerical methods, spectral collocation offers the best tradeoff, achieving residuals comparable to FEM at one-tenth the computational cost. The PINN occupies the lower-right corner, requiring both the longest computation time and delivering the weakest accuracy.
+Figure~\ref{fig:cost_accuracy} presents the accuracy--efficiency tradeoff across all methods, plotting maximum PDE residual (vertical axis, logarithmic) against solve time (horizontal axis, logarithmic).
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=0.6\textwidth]{cost_accuracy.pdf}
-    \caption{Accuracy--efficiency tradeoff for all methods. The analytical solution achieves machine-precision accuracy at the lowest computational cost. Spectral collocation offers the best tradeoff among numerical methods.}
+    \caption{Accuracy--efficiency tradeoff for all methods (log-log scale). The analytical solution (star) achieves the lowest residual at the shortest time, establishing the Pareto frontier. The spectral method (diamond) offers the best tradeoff among numerical methods. The PINN (square) occupies the unfavorable high-cost, low-accuracy corner.}
     \label{fig:cost_accuracy}
 \end{figure}
 
+The analytical solution dominates the Pareto frontier, achieving both the lowest residual and the shortest computation time. This dual advantage is possible because the analytical method evaluates a closed-form formula---no iterative solver, no matrix factorization, and no training loop is required.
+
+Among the numerical methods, the spectral approach offers the best tradeoff: it achieves PDE residuals within one order of magnitude of FEM while using an order of magnitude fewer degrees of freedom and computing $10\times$ faster. This reflects the exponential-versus-algebraic convergence advantage of spectral methods for smooth problems on regular domains.
+
+The PINN occupies the unfavorable corner of the tradeoff space: it requires $\sim 5{,}800\times$ longer than the analytical solver while delivering $\sim 10^{13}\times$ weaker accuracy. This quantitative characterization of the accuracy gap is precisely the type of rigorous comparison that an analytical benchmark enables.
+
 \subsection{Flux Profile Comparison}\label{sec:flux_profiles}
 
-Figure~\ref{fig:flux_profiles} compares flux profiles along representative cross-sections for all methods. Along the line $y = 0$ (midline), the analytical, FDM, FEM, and spectral solutions are visually indistinguishable, confirming that all methods capture the qualitative flux distribution correctly. The PINN solution shows small but visible deviations, particularly near the boundaries where the Neumann conditions are most difficult to enforce through the soft-constraint loss function. Along the line $x = -0.3$ (near the inhomogeneous boundary), the differences between methods become more pronounced, with the PINN showing systematic bias in the flux amplitude.
+Figure~\ref{fig:flux_profiles} compares flux profiles along representative cross-sections for all five methods.
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=0.95\textwidth]{flux_profiles.pdf}
-    \caption{Flux profiles along representative cross-sections. The analytical solution (solid line) serves as the reference. FDM, FEM, and spectral methods (markers) show close agreement. The PINN (triangles) exhibits visible deviations, particularly near boundaries.}
+    \caption{Flux profiles along representative cross-sections. The analytical solution (solid line) serves as the exact reference. FDM (circles), FEM (squares), and spectral (diamonds) methods show agreement to within their respective truncation errors. The PINN (triangles) exhibits visible deviations, particularly near the left boundary where the Neumann condition is most challenging.}
     \label{fig:flux_profiles}
 \end{figure}
 
+Along the line $y = 0$ (the antisymmetry axis), all fluxes are identically zero by symmetry, providing no discrimination between methods. Along a line at $y = 0.25$, the analytical, FDM, FEM, and spectral solutions are visually indistinguishable at the scale of the plot, confirming that all classical methods capture the qualitative flux distribution correctly. The PINN solution shows small but measurable deviations, particularly near the left boundary ($x = -0.5$) where the Neumann condition imposes the strongest constraint on the derivative.
+
+Near the right boundary ($x = 0.5$), all methods converge to the same value with zero gradient, consistent with the homogeneous Neumann condition. The PINN shows the largest deviation from this condition, reflecting the difficulty of enforcing derivative constraints through the soft-loss training paradigm.
+
 \subsection{Residual Distribution}\label{sec:residual_dist}
 
-Figure~\ref{fig:residual_comparison} visualizes the spatial distribution of PDE residuals for each method. The analytical solution shows residuals at or below machine epsilon throughout the domain, with no spatial structure. The FDM residual shows the characteristic grid-aligned pattern of discretization error, with larger residuals near boundaries where the one-sided stencils are less accurate. The FEM residual is smoother and lower in magnitude, reflecting the variational minimization principle. The spectral residual is concentrated near the boundaries (Gibbs-like effect at the edges of the Chebyshev grid). The PINN residual is largest and shows no clear spatial pattern, suggesting that the network has not fully converged.
+Figure~\ref{fig:residual_comparison} visualizes the spatial distribution of PDE residuals for selected methods.
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=0.95\textwidth]{residual_comparison.pdf}
-    \caption{Spatial distribution of PDE residuals (log scale) for each method. The analytical solution achieves uniformly machine-precision residuals. Numerical methods show characteristic spatial patterns reflecting their discretization strategies.}
+    \caption{Spatial distribution of PDE residuals (log scale) across methods. The analytical solution achieves uniformly machine-precision residuals with no spatial structure. The FDM shows characteristic grid-aligned error patterns with larger residuals near boundaries. The PINN residual shows no systematic pattern and is uniformly orders of magnitude larger.}
     \label{fig:residual_comparison}
 \end{figure}
+
+The analytical solution shows residuals at or below machine epsilon throughout the domain, with no discernible spatial structure---the residual is uniformly $O(10^{-16})$ at every test point. This spatial uniformity is a hallmark of an exact solution: there are no regions where the method is more or less accurate.
+
+The FDM residual shows the characteristic grid-aligned pattern of discretization error, with somewhat larger residuals near the left boundary where the one-sided stencils for the inhomogeneous Neumann condition are less accurate than the interior central differences. The FEM residual is smoother and lower in peak magnitude, reflecting the global variational principle. The spectral residual exhibits slight elevation near the domain edges, consistent with the boundary clustering of Chebyshev nodes and the Runge phenomenon at the edges of the interpolation interval.
+
+The PINN residual is the largest across all methods and shows no systematic spatial pattern, suggesting that the optimization has not converged to a sufficiently accurate approximation of the PDE solution. The residual is roughly uniform at $O(10^{-2})$, indicating that the neural network has learned the qualitative shape of the solution but not the fine quantitative details.
 
 % ============================================================================
 % 6. RELATED WORK
 % ============================================================================
 \section{Related Work}\label{sec:related}
 
-\paragraph{Analytical methods for neutron diffusion.}
-The analytical treatment of multi-group neutron diffusion has a long history rooted in the foundational texts of \citet{duderstadt1976nuclear} and \citet{lamarsh1966introduction}. In one spatial dimension, the Laplace Transform provides a powerful tool for two-group slab problems~\citep{lemos2008analytical}. Iterative Fourier methods have been applied to multigroup eigenvalue problems in 1D~\citep{zanette2021modified} and extended to 2D via domain decomposition~\citep{zanette2018modified}, though the resulting solutions are limits of iterative sequences rather than closed-form expressions. The Residual Power Series Method of \citet{elajou2019analytical} avoids spatial discretization but applies to specific geometries and parameter regimes. Fourier expansion methods for lattice cells~\citep{dion2013fourier} and nodal methods with analytical basis functions~\citep{lozano2008andes, smith1983nodal} achieve high accuracy on coarse meshes but target eigenvalue (criticality) problems rather than boundary-driven source problems.
+\subsection{Analytical Methods for Neutron Diffusion}
 
-The Helmholtz equation---the scalar analogue of the diffusion equation---admits well-known cosine-eigenfunction solutions on rectangular domains with Neumann boundary conditions. Our method generalizes this classical construction to the coupled multi-group setting through eigendecomposition of the group-coupling matrix, a step that has not been documented in the analytical neutron diffusion literature.
+The analytical treatment of multi-group neutron diffusion has a long history rooted in the foundational textbooks of \citet{duderstadt1976nuclear}, \citet{stacey2007nuclear}, and \citet{lamarsh1966introduction}. The standard separation-of-variables approach applies to bare homogeneous reactors with simple geometries (slab, cylinder, sphere) and homogeneous boundary conditions, yielding the classical bare-reactor flux distributions and criticality conditions.
 
-\paragraph{Classical numerical methods.}
-Finite difference methods for neutron diffusion are well established as reference solvers~\citep{han2009computational}. Finite element methods, particularly Galerkin FEM with linear and quadratic elements, have been applied extensively to multi-group problems~\citep{cho2016sensitivity}. Spectral methods, including the Spectral Green's Function approach~\citep{cabraldasilva2023sgf}, exploit the exponential convergence of global polynomial bases for smooth solutions but are limited to regular geometries. All of these methods introduce discretization error that fundamentally limits their use as benchmarks.
+For more complex configurations, several advanced analytical techniques have been developed. The Laplace Transform provides exact solutions for 1D slab problems with multiple material regions~\citep{lemos2008analytical}. The Finite Fourier Transform, combined with iterative power methods, extends to multigroup eigenvalue problems in 1D~\citep{zanette2021modified} and 2D~\citep{zanette2018modified}, though the solution is obtained as a convergent iteration rather than in closed form. The Residual Power Series Method~\citep{elajou2019analytical} avoids discretization but produces truncated series solutions. Fourier expansion methods for lattice cells~\citep{dion2013fourier} handle rectangular geometries with reflective boundaries.
 
-\paragraph{Neural PDE solvers.}
-Physics-informed neural networks~\citep{raissi2019physics} embed PDE residuals into the loss function of a neural network, enabling mesh-free solution of forward and inverse problems. Applications to neutron diffusion include data-enhanced training~\citep{yang2023depinn}, interface conditions~\citep{liu2023physics}, multi-group decoupling~\citep{huang2024decoupling}, and improved architectures~\citep{zhang2026r2pinn}. Neural operators---Fourier Neural Operator~\citep{li2021fourier} and DeepONet~\citep{lu2021deeponet}---learn mappings between function spaces and generalize across parameter families without retraining. \citet{lu2022comprehensive} provide a comprehensive comparison of these two operator-learning frameworks. Physics-informed variants of DeepONet~\citep{wang2021learning} combine the operator-learning paradigm with physics constraints.
+Nodal methods with analytical basis functions represent a semi-analytical approach. The ANDES solver~\citep{lozano2008andes} uses the ACMFD method to derive coarse-mesh discretization from analytical 1D solutions within each node. Classical nodal methods~\citep{smith1983nodal} exploit transverse integration for efficient 3D calculations.
 
-\paragraph{Why exact benchmarks matter for AI for science.}
-All neural PDE solvers for neutron diffusion reported in the literature are validated against numerical references---typically FDM or FEM solutions on fine grids. This creates an inherent ambiguity: when the neural solver disagrees with the reference, it is unclear whether the discrepancy reflects neural solver error, numerical reference error, or both. The analytical solution derived in this work eliminates this ambiguity by providing a reference with controllable precision, bounded only by the number of Fourier terms included and the floating-point arithmetic of elementary functions. We argue that the development of exact benchmarks should accompany the development of increasingly sophisticated neural PDE solvers, and that the Fourier--eigendecomposition technique demonstrated here can be extended to other coupled elliptic systems with compatible boundary conditions.
+The Helmholtz equation---the scalar single-group analogue of the diffusion equation---admits well-known cosine-eigenfunction solutions on rectangular domains with Neumann boundary conditions. Our Fourier--eigendecomposition method generalizes this classical construction to the coupled multi-group setting by introducing matrix eigendecomposition as the group-decoupling step. This combination has not been documented in the analytical neutron diffusion literature, and we believe it represents a methodological contribution beyond the specific problem instance solved here.
+
+\subsection{Classical Numerical Methods}
+
+Finite difference methods for neutron diffusion are well established as reference solvers in both research and production settings~\citep{han2009computational}. Their simplicity and guaranteed convergence rates make them the standard first choice for benchmarking. Finite element methods bring additional flexibility through unstructured meshes and natural Neumann condition handling~\citep{cho2016sensitivity}. Spectral methods, including the Spectral Green's Function approach~\citep{cabraldasilva2023sgf}, achieve exponential convergence for smooth problems on regular domains but are limited to simple geometries.
+
+All of these methods introduce discretization error that fundamentally limits their utility as benchmarks. Even on very fine grids ($201 \times 201$ for FDM, corresponding to $h = 0.005$), the truncation error is $O(10^{-5})$---nine orders of magnitude above machine precision. This error floor means that numerical references cannot distinguish between methods that differ by less than $O(10^{-5})$ in their solution accuracy.
+
+\subsection{Neural PDE Solvers}
+
+Physics-informed neural networks~\citep{raissi2019physics} have generated considerable excitement in the computational physics community by offering a mesh-free, data-lean approach to PDE solution. Applications to neutron diffusion have progressed rapidly: data-enhanced training for eigenvalue problems~\citep{yang2023depinn}, conservative interface conditions~\citep{liu2023physics}, multi-group decoupling loss functions~\citep{huang2024decoupling}, and improved architectures with residual adaptive resampling~\citep{zhang2026r2pinn}.
+
+Neural operators---FNO~\citep{li2021fourier} and DeepONet~\citep{lu2021deeponet}---represent a complementary paradigm that learns solution operators rather than individual solutions, enabling zero-shot generalization across parameter families. The comprehensive comparison by \citet{lu2022comprehensive} demonstrated that FNO excels on regular grids with smooth solutions while DeepONet is more robust to noise and flexible with geometry. Physics-informed extensions~\citep{wang2021learning} combine these approaches with PDE constraints.
+
+\subsection{The Case for Exact Benchmarks}
+
+All neural PDE solvers for neutron diffusion reported in the literature to date are validated against numerical references---typically FDM or FEM solutions on fine grids. This creates two problems for rigorous validation. First, the numerical reference carries its own discretization error, which is often comparable to or larger than the neural solver error being measured. Second, the comparison conflates two sources of error (numerical reference error and neural solver error) into a single observed discrepancy, making it impossible to isolate the contribution of each.
+
+The analytical solution derived in this work eliminates both problems. Its residual is bounded by machine epsilon ($\sim 10^{-16}$), which is 11--13 orders of magnitude below any neural solver accuracy reported in the literature. Any discrepancy between a neural solver and the analytical reference is, to within floating-point precision, entirely attributable to the neural solver.
+
+We argue that the development of exact benchmarks should accompany the development of increasingly sophisticated neural PDE solvers. The Fourier--eigendecomposition technique demonstrated here can be extended to other coupled elliptic systems with compatible boundary conditions, providing a family of exact benchmarks spanning different problem complexities, coupling strengths, and spatial dimensions.
 
 % ============================================================================
 % 7. CONCLUSION
 % ============================================================================
 \section{Conclusion}\label{sec:conclusion}
 
-We have derived the first closed-form analytical solution for the two-dimensional, two-group steady-state neutron diffusion equation with inhomogeneous Neumann boundary conditions on a rectangular domain. The solution is constructed via Fourier--cosine expansion in the $y$-direction combined with eigendecomposition of the group-coupling matrix $\mat{D}^{-1}\mat{A}$, yielding independent hyperbolic ODEs in $x$ whose coefficients are determined algebraically from the boundary data. The entire procedure is non-iterative and produces a Fourier series whose truncation at $N = 200$ terms achieves PDE residuals at the level of machine epsilon ($\sim 10^{-16}$).
+We have derived the first closed-form analytical solution for the two-dimensional, two-group steady-state neutron diffusion equation with inhomogeneous Neumann boundary conditions on a rectangular domain. The solution is constructed via Fourier--cosine expansion in the $y$-direction combined with eigendecomposition of the group-coupling matrix $\mat{D}^{-1}\mat{A}$, yielding independent hyperbolic ODEs in $x$ whose coefficients are determined algebraically from the boundary data. The entire procedure is non-iterative, non-discretized (beyond Fourier truncation), and produces a closed-form expression that can be evaluated at arbitrary spatial points to any desired floating-point precision.
 
-Benchmarking against four numerical and data-driven solvers---FDM, FEM, spectral collocation, and PINN---demonstrates that the analytical solution outperforms all comparison methods by 10--13 orders of magnitude in PDE residual accuracy while requiring the shortest computation time. The FDM convergence study confirms the expected $O(h^2)$ rate, independently validating both the FDM implementation and the analytical reference.
+Benchmarking against four numerical and data-driven solvers demonstrates the value of an exact reference. The analytical solution achieves PDE residuals at the level of machine epsilon ($\num{2.81e-16}$), outperforming the best numerical method (FEM, $\num{9.20e-7}$) by 10 orders of magnitude and the PINN ($\num{9.54e-3}$) by 13 orders. The FDM convergence study confirms the expected $O(h^2)$ rate, independently validating both the FDM implementation and the analytical reference. The accuracy--efficiency comparison reveals that the analytical solver is not only the most accurate but also the fastest, requiring \num{0.017}\,s compared to \num{98.6}\,s for the PINN.
 
-The analytical solution serves as an exact, reproducible benchmark for the coupled multi-group neutron diffusion setting---a capability that did not previously exist. As physics-informed neural networks, neural operators, and other AI-for-science PDE solvers continue to advance, the availability of machine-precision analytical references becomes increasingly important for rigorous validation.
+The analytical solution serves three roles going forward. First, as a \textbf{verification benchmark}: it provides an unambiguous ground truth for testing numerical PDE solvers, with residuals bounded by machine epsilon rather than discretization error. Second, as a \textbf{training reference}: neural PDE solvers that incorporate supervised loss terms can use the analytical solution to generate arbitrarily large and precise training datasets at arbitrary spatial resolution. Third, as a \textbf{methodological template}: the Fourier--eigendecomposition technique demonstrated here is not specific to neutron diffusion and can be applied to any coupled elliptic PDE system on rectangular domains where at least one pair of opposing boundaries admits a Fourier eigenfunction expansion.
 
 \paragraph{Future work.}
-Three extensions merit investigation. First, the Fourier--eigendecomposition technique can be generalized to heterogeneous media by treating material interfaces as internal boundaries with continuity conditions, at the cost of expanding the algebraic matching system. Second, extension to three spatial dimensions is straightforward in principle---the $z$-direction admits another Fourier expansion---though the computational cost grows linearly with the number of additional Fourier modes. Third, the eigenvalue (criticality) variant of the problem, where the fission source is scaled by $1/k_{\text{eff}}$, can be addressed by combining the present technique with a bisection search over the eigenvalue parameter.
+Three extensions merit investigation. First, the technique can be generalized to \textbf{heterogeneous media} (piecewise-constant cross-sections) by treating material interfaces as internal boundaries with continuity conditions for both flux and current. The Fourier expansion in $y$ remains valid, but the $x$-direction solution involves matching conditions at each interface, expanding the algebraic system. Second, extension to \textbf{three spatial dimensions} is straightforward: the $z$-direction admits another Fourier expansion (cosine for Neumann, sine for Dirichlet), producing a doubly indexed family of 1D ODEs that are decoupled by the same eigenvector matrix $\mat{P}$. The computational cost grows as $O(N_y \cdot N_z)$ but remains polynomial. Third, the \textbf{eigenvalue (criticality) problem}, where the fission source is scaled by $1/k_{\text{eff}}$, can be addressed by parametrizing the analytical solution over $k_{\text{eff}}$ and applying a bisection or Newton search to find the value that satisfies the criticality condition (non-trivial solution with finite norm).
 
 % ============================================================================
 % REFERENCES

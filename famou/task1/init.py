@@ -8,9 +8,17 @@ The script must implement solution() which returns (phi1_func, phi2_func),
 two callables that accept (x: float, y: float) and return the flux values.
 """
 import numpy as np
-from scipy import sparse
-from scipy.sparse.linalg import spsolve
-from scipy.interpolate import RegularGridInterpolator
+try:
+    from scipy import sparse
+    from scipy.sparse.linalg import spsolve
+    _HAS_SCIPY = True
+except ImportError:
+    _HAS_SCIPY = False
+try:
+    from scipy.interpolate import RegularGridInterpolator
+    _HAS_SCIPY_INTERP = True
+except ImportError:
+    _HAS_SCIPY_INTERP = False
 
 # Physical constants
 D1 = 1.0
@@ -19,6 +27,22 @@ A11 = 0.0075   # Sigma_r - nu*Sigma_f1
 A12 = -0.25    # -nu*Sigma_f2
 A21 = -0.015   # -Sigma_12
 A22 = 0.1      # Sigma_a2
+
+
+def _bilinear_interp(phi_grid, x_coords, y_coords, x, y):
+    """Simple bilinear interpolation."""
+    x = np.clip(x, x_coords[0], x_coords[-1])
+    y = np.clip(y, y_coords[0], y_coords[-1])
+    i = np.searchsorted(x_coords, x) - 1
+    j = np.searchsorted(y_coords, y) - 1
+    i = np.clip(i, 0, len(x_coords) - 2)
+    j = np.clip(j, 0, len(y_coords) - 2)
+    tx = (x - x_coords[i]) / (x_coords[i+1] - x_coords[i])
+    ty = (y - y_coords[j]) / (y_coords[j+1] - y_coords[j])
+    return (phi_grid[i, j] * (1-tx)*(1-ty)
+            + phi_grid[i+1, j] * tx*(1-ty)
+            + phi_grid[i, j+1] * (1-tx)*ty
+            + phi_grid[i+1, j+1] * tx*ty)
 
 
 def _build_and_solve(Nx: int = 101, Ny: int = 101):
@@ -87,9 +111,6 @@ def _build_and_solve(Nx: int = 101, Ny: int = 101):
     phi1_grid = sol[:N].reshape(Nx, Ny)
     phi2_grid = sol[N:].reshape(Nx, Ny)
     return phi1_grid, phi2_grid, x_coords, y_coords
-
-
-def solution():
     """Return (phi1_func, phi2_func) callables for the neutron flux solution.
 
     Returns:

@@ -4,18 +4,14 @@
 \usepackage{booktabs}
 \usepackage{graphicx}
 \usepackage{hyperref}
-\usepackage{siunitx}
 \usepackage{natbib}
 \usepackage{subcaption}
 \usepackage[T1]{fontenc}
 \usepackage{bm}
-\usepackage{enumitem}
 \usepackage{xcolor}
-\usepackage{algorithm}
-\usepackage{algorithmicx}
-\usepackage{algpseudocode}
-\usepackage{multirow}
 \usepackage{tabularx}
+% enumitem, algorithm, multirow not in BasicTeX — use fallbacks
+\usepackage{enumerate}
 
 \graphicspath{{figs/}{./figs/}}
 
@@ -46,7 +42,7 @@
 High-fidelity neutron flux prediction is fundamental to nuclear reactor design and safety analysis, yet analytical benchmarks for coupled multi-group diffusion equations with non-trivial boundary conditions remain scarce.
 We derive the first closed-form analytical solution for the two-dimensional, two-group steady-state neutron diffusion equation on a square domain with inhomogeneous Neumann boundary conditions, where the left boundary prescribes a spatially varying incoming current and the remaining three boundaries impose zero normal current.
 Our method combines a Fourier--cosine expansion in the $y$-direction---whose basis functions exactly satisfy the homogeneous Neumann conditions on two sides---with eigendecomposition of the group-coupling matrix $\mat{D}^{-1}\mat{A}$ to decouple the fast and thermal groups, yielding independent hyperbolic ODEs in $x$ whose solutions satisfy the remaining boundary conditions algebraically.
-The solution achieves machine-precision PDE residuals ($\leq \num{3e-16}$), outperforming all numerical methods by 9--13 orders of magnitude, and serves as an exact benchmark for validating AI-for-science PDE solvers. Pointwise $L_\infty$ errors of the best numerical method (FEM, $101\times101$) are $1.4\times10^{-5}$ against the analytical reference.
+The solution achieves machine-precision PDE residuals ($\leq 3\times 10^{-16}$), outperforming all numerical methods by 9--13 orders of magnitude, and serves as an exact benchmark for validating AI-for-science PDE solvers. Pointwise $L_\infty$ errors of the best numerical method (FEM, $101\times101$) are $1.4\times10^{-5}$ against the analytical reference.
 \end{abstract}
 
 % ============================================================================
@@ -69,7 +65,7 @@ where $\phi_g(\vect{r})$ is the scalar neutron flux in group $g$, $D_g$ is the d
 \subsection{The Two-Group Model}
 
 The two-group formulation ($G = 2$), which distinguishes fast (group 1, $E > 1$~eV typically) and thermal (group 2, $E < 1$~eV) neutrons, captures the dominant physical mechanisms in thermal reactors:
-\begin{itemize}[leftmargin=2em, itemsep=2pt]
+\begin{itemize}
     \item \textbf{Fast fission and neutron production}: High-energy neutrons induce fission in both fissile ($^{235}$U) and fertile ($^{238}$U) isotopes, producing $\nu \approx 2.4$--$2.5$ fast neutrons per fission event.
     \item \textbf{Moderation (slowing-down)}: Fast neutrons lose energy through elastic and inelastic scattering with moderator nuclei (hydrogen, deuterium, carbon), transferring from the fast group to the thermal group. This process is characterized by the scattering cross-section $\Sigma_{1 \to 2}$.
     \item \textbf{Thermal absorption and fission}: Thermal neutrons are either absorbed parasitically (captured without fission) or induce thermal fission, sustaining the chain reaction. The balance between absorption and fission determines the system's criticality.
@@ -81,7 +77,7 @@ This model has served as the primary analytical testbed for neutron diffusion th
 
 Exact analytical solutions for two-dimensional coupled multi-group PDEs with inhomogeneous boundary conditions are elusive for several interconnected reasons:
 
-\begin{enumerate}[leftmargin=2em, itemsep=3pt]
+\begin{enumerate}
     \item \textbf{Inter-group coupling}: The coupling between energy groups through fission ($\nu\Sigma_f$) and scattering ($\Sigma_{1 \to 2}$) cross-sections produces a system of PDEs that cannot, in general, be separated into independent scalar equations by standard variable separation techniques. The fast-group equation contains a source term proportional to the thermal flux (via fission), and the thermal-group equation contains a source term proportional to the fast flux (via scattering). This bidirectional coupling precludes sequential solution of the individual group equations.
 
     \item \textbf{Inhomogeneous boundary data}: Eigenfunction expansion methods---the standard tool for constructing analytical solutions to PDEs on regular domains---require homogeneous boundary conditions in the expansion direction. When the boundary data is inhomogeneous (non-zero Neumann or Dirichlet), the expansion must be modified to account for the non-trivial boundary contribution, typically through a particular solution or a boundary function subtraction that itself satisfies the inhomogeneous data.
@@ -114,7 +110,7 @@ The Analytic Coarse-Mesh Finite Difference (ACMFD) method, implemented in the AN
 
 This gap in analytical solutions has become increasingly consequential with the emergence of data-driven PDE solvers in the reactor physics arena. Physics-informed neural networks (PINNs)~\citep{raissi2019physics} embed PDE residuals into the loss function of a neural network, enabling mesh-free solution of both forward and inverse problems without labeled training data. Several groups have applied PINNs to neutron diffusion:
 
-\begin{itemize}[leftmargin=2em, itemsep=2pt]
+\begin{itemize}
     \item \citet{yang2023depinn} combined small amounts of simulation data with physics constraints (DEPINN) for eigenvalue problems, demonstrating engineering-acceptable accuracy.
     \item \citet{liu2023physics} enforced conservative interface conditions at material discontinuities (PC-GIPMNN) for $k$-eigenvalue problems with heterogeneous media.
     \item \citet{huang2024decoupling} introduced a decoupling loss function to handle the ill-conditioned coupling structure of multi-group diffusion, achieving the first neural-network solutions for 3D multi-group problems in realistic geometries.
@@ -128,7 +124,7 @@ All of these neural PDE solvers for neutron diffusion are validated against nume
 \subsection{Contributions}
 
 The principal contributions of this work are:
-\begin{enumerate}[leftmargin=2em, itemsep=3pt]
+\begin{enumerate}
     \item \textbf{First closed-form analytical solution}: We derive a non-iterative, closed-form solution to the 2D two-group neutron diffusion equation with inhomogeneous Neumann boundary conditions, expressed as a Fourier--cosine series with algebraically determined coefficients. The solution requires no iteration, no nonlinear solve, and no discretization beyond the Fourier series truncation.
 
     \item \textbf{Rigorous derivation via Fourier--eigendecomposition}: We combine Fourier--cosine expansion in one spatial variable with eigendecomposition of the diffusion-weighted group-coupling matrix $\mat{D}^{-1}\mat{A}$. This provides a general strategy applicable to any coupled elliptic PDE system on rectangular domains where at least one pair of opposing boundaries carries homogeneous Neumann or Dirichlet conditions.
@@ -469,7 +465,7 @@ For each odd $n$ (the only values where $b_n \neq 0$), the coefficients are obta
 
 \paragraph{Invertibility of $\mat{Q}_n$.}
 The matrix $\mat{Q}_n$ is invertible for all $n \geq 1$ because:
-\begin{enumerate}[leftmargin=2em, itemsep=2pt]
+\begin{enumerate}
     \item $\mat{P}$ is invertible: the eigenvectors of $\mat{M}$ are linearly independent since $\mat{M}$ has distinct eigenvalues.
     \item $\alpha_{p,n} > 0$ for all $p$ and $n \geq 1$: this follows from $\alpha_{p,n}^2 = \mu_p + (n\pi)^2 > 0$.
     \item $\sinh(\alpha_{p,n}) > 0$ for $\alpha_{p,n} > 0$: a basic property of the hyperbolic sine.
@@ -485,7 +481,7 @@ Combining all steps---Fourier expansion, eigendecomposition, $\cosh$ solutions, 
     \boxed{\phi_g(x,y) = \sum_{\substack{n=1 \\ n\;\text{odd}}}^{\infty} \left[\sum_{p=1}^{2} c_{p,n}\,P_{gp}\,\cosh\bigl(\alpha_{p,n}(x - 0.5)\bigr)\right] \cos\bigl(n\pi(y+0.5)\bigr), \quad g = 1, 2,}
 \end{equation}
 where:
-\begin{itemize}[leftmargin=2em, itemsep=2pt]
+\begin{itemize}
     \item $\alpha_{p,n} = \sqrt{\mu_p + (n\pi)^2}$ with $\mu_1 \approx -0.0257$, $\mu_2 \approx 0.2332$;
     \item $P_{gp}$ are the components of the eigenvector matrix of $\mat{M} = \mat{D}^{-1}\mat{A}$;
     \item $c_{p,n} = [\mat{Q}_n^{-1}\,\vect{e}]_p \cdot b_n$ with $b_n = -4/(n\pi)^2$ and $\mat{Q}_n$ defined in~\eqref{eq:Q_matrix}.
@@ -494,7 +490,7 @@ where:
 \paragraph{Convergence analysis.}
 The Fourier--cosine series~\eqref{eq:full_solution} converges for two independent and complementary reasons:
 
-\begin{enumerate}[leftmargin=2em, itemsep=3pt]
+\begin{enumerate}
     \item \textbf{Algebraic decay of Fourier coefficients}: The boundary data coefficients $b_n = -4/(n\pi)^2$ decay as $O(n^{-2})$, reflecting the Lipschitz continuity of the boundary function $f(y) = y$. This alone guarantees absolute convergence of the series.
 
     \item \textbf{Exponential damping through $\cosh$ normalization}: For each mode $n$, the coefficient $c_{p,n}$ involves the factor $1/\sinh(\alpha_{p,n})$ from the $\mat{Q}_n^{-1}$ computation. For large $n$, $\alpha_{p,n} \approx n\pi$, and $\sinh(n\pi) \approx e^{n\pi}/2$. The solution at an interior point $x$ involves $\cosh(\alpha_{p,n}(x - 0.5))$, which for $|x - 0.5| < 1$ grows much more slowly than $\sinh(\alpha_{p,n})$. The ratio:
@@ -505,7 +501,7 @@ The Fourier--cosine series~\eqref{eq:full_solution} converges for two independen
 \end{enumerate}
 
 The combination of $O(n^{-2})$ algebraic decay and exponential damping produces extremely rapid convergence. In practice:
-\begin{itemize}[leftmargin=2em]
+\begin{itemize}
     \item $N = 50$ Fourier modes yield PDE residuals of order $10^{-12}$.
     \item $N = 200$ modes push the PDE residual to $\sim 10^{-16}$---the limit of IEEE 754 double-precision floating-point arithmetic. Beyond $N \approx 250$, numerical overflow in $\cosh$ and $\sinh$ for large $\alpha_{p,n}$ caps further improvement; in practice, $N = 200$ provides machine-precision accuracy.
 \end{itemize}
@@ -516,7 +512,7 @@ At the boundary $x = -0.5$ itself, the exponential damping vanishes (since $|x -
 \centering
 \caption{Convergence of the analytical solution with Fourier truncation $N$. PDE residual is the maximum over a $15\times15$ interior evaluation grid; BC residual is the maximum over 10 boundary sample points per side. Wall time measured on Apple M-series CPU.}
 \label{tab:nterms_convergence}
-\begin{tabular}{rSSSS}
+\begin{tabular}{rrrrr}
 \toprule
 {$N$} & {PDE Residual} & {BC Residual} & {Wall Time (s)} \\
 \midrule
@@ -557,26 +553,23 @@ Step & Operation & Eliminates & Output \\
 \paragraph{Algorithmic summary.}
 For implementation, the procedure is summarized in Algorithm~\ref{alg:analytical}.
 
-\begin{algorithm}[h]
-\caption{Fourier--Eigendecomposition Analytical Solver}\label{alg:analytical}
-\begin{algorithmic}[1]
-\Require Physical parameters $D_1, D_2, \Sigma_{r,1}, \Sigma_{a,2}, \nu, \Sigma_{f,1}, \Sigma_{f,2}, \Sigma_{1\to2}$; truncation $N$; evaluation points $\{(x_j, y_j)\}_{j=1}^{N_{\text{eval}}}$
-\State Compute $\mat{M} = \mat{D}^{-1}\mat{A}$ and its eigendecomposition $(\mu_1, \mu_2, \mat{P}, \mat{P}^{-1})$
-\State Initialize $\phi_{1,j} = 0$, $\phi_{2,j} = 0$ for all $j$
-\For{$n = 1, 3, 5, \ldots, N$ (odd modes only)}
-    \State $b_n \gets -4/(n\pi)^2$
-    \State $\alpha_{p,n} \gets \sqrt{\mu_p + (n\pi)^2}$ for $p = 1, 2$
-    \State Assemble $\mat{Q}_n$ via Eq.~\eqref{eq:Q_matrix}
-    \State Solve $\mat{Q}_n\,\vect{c}_n = b_n\,\vect{e}$ for $(c_{1,n}, c_{2,n})$
-    \For{each evaluation point $(x_j, y_j)$}
-        \For{$p = 1, 2$}
-            \State $\phi_{g,j} \mathrel{+}= c_{p,n}\,P_{gp}\,\cosh(\alpha_{p,n}(x_j - 0.5))\,\cos(n\pi(y_j + 0.5))$ for $g = 1, 2$
-        \EndFor
-    \EndFor
-\EndFor
-\State \Return $\{\phi_{1,j}, \phi_{2,j}\}_{j=1}^{N_{\text{eval}}}$
-\end{algorithmic}
-\end{algorithm}
+\begin{table}[h]
+\centering\small
+\begin{tabular}{cl}
+\toprule
+Step & Operation \\
+\midrule
+1 & Compute $\mat{M} = \mat{D}^{-1}\mat{A}$ and eigendecomposition $(\mu_1, \mu_2, \mat{P}, \mat{P}^{-1})$ \\
+2 & Initialize $\phi_{1,j} = 0$, $\phi_{2,j} = 0$ for all evaluation points \\
+3 & \textbf{For} $n = 1, 3, 5, \ldots, N$ (odd modes only): \\
+  & \quad Compute $b_n = -4/(n\pi)^2$, $\alpha_{p,n} = \sqrt{\mu_p + (n\pi)^2}$ for $p=1,2$ \\
+  & \quad Assemble $\mat{Q}_n$ via Eq.~\eqref{eq:Q_matrix}; solve $\mat{Q}_n\vect{c}_n = b_n\vect{e}$ \\
+  & \quad Accumulate $\phi_{g,j} \mathrel{+}= \sum_p c_{p,n}P_{gp}\cosh(\alpha_{p,n}(x_j{-}0.5))\cos(n\pi(y_j{+}0.5))$ \\
+4 & Return $\{\phi_{1,j}, \phi_{2,j}\}_{j=1}^{N_{\text{eval}}}$ \\
+\bottomrule
+\end{tabular}
+\caption{Fourier--Eigendecomposition Analytical Solver (Algorithm~1).}\label{alg:analytical}
+\end{table}
 
 % ============================================================================
 % 4. NUMERICAL METHODS FOR COMPARISON
@@ -672,24 +665,24 @@ Table~\ref{tab:main_results} presents the main comparison across all five method
 \input{tables/main_results_table}
 
 \paragraph{Analytical solution.}
-The analytical method achieves a maximum PDE residual of \num{2.81e-16}, indistinguishable from the double-precision floating-point epsilon $\epsilon_{\text{mach}} \approx 2.22 \times 10^{-16}$. This confirms that the Fourier series with $N = 200$ modes truncation has converged to machine precision for interior point evaluation. The boundary condition residual of \num{5.03e-7} is seven orders of magnitude above the PDE residual, reflecting the slower algebraic convergence ($O(n^{-2})$) of the Fourier series at the boundary $x = -0.5$ where the exponential damping factor is absent. The solve time of \num{0.017}\,s demonstrates the computational efficiency of evaluating closed-form expressions.
+The analytical method achieves a maximum PDE residual of $2.81\times 10^{-16}$, indistinguishable from the double-precision floating-point epsilon $\epsilon_{\text{mach}} \approx 2.22 \times 10^{-16}$. This confirms that the Fourier series with $N = 200$ modes truncation has converged to machine precision for interior point evaluation. The boundary condition residual of $5.03\times 10^{-7}$ is seven orders of magnitude above the PDE residual, reflecting the slower algebraic convergence ($O(n^{-2})$) of the Fourier series at the boundary $x = -0.5$ where the exponential damping factor is absent. The solve time of 0.017\,s demonstrates the computational efficiency of evaluating closed-form expressions.
 
 \paragraph{Finite Element Method.}
-FEM achieves the lowest PDE residual among the numerical methods (\num{9.20e-7}), benefiting from the variational formulation that minimizes the weak residual over the finite-dimensional trial space. The $O(h^2)$ convergence with $h = 0.01$ produces a residual consistent with the theoretical bound $Ch^2 \approx 10^{-4}$--$10^{-6}$ (with a favorable constant $C$ for this smooth problem). The boundary condition residual (\num{4.05e-4}) is comparable to the FDM, reflecting the common difficulty of achieving high accuracy at Neumann boundaries with low-order elements.
+FEM achieves the lowest PDE residual among the numerical methods ($9.2\times 10^{-7}$), benefiting from the variational formulation that minimizes the weak residual over the finite-dimensional trial space. The $O(h^2)$ convergence with $h = 0.01$ produces a residual consistent with the theoretical bound $Ch^2 \approx 10^{-4}$--$10^{-6}$ (with a favorable constant $C$ for this smooth problem). The boundary condition residual ($4.05\times 10^{-4}$) is comparable to the FDM, reflecting the common difficulty of achieving high accuracy at Neumann boundaries with low-order elements.
 
 \paragraph{Spectral Collocation.}
-The spectral method achieves a PDE residual of \num{7.23e-6} with only 900 degrees of freedom per group---a factor of 11 fewer DOF than the FDM/FEM while achieving comparable PDE accuracy. The per-DOF efficiency of spectral methods for smooth problems is evident here. The boundary condition residual (\num{6.04e-5}) is the best among the numerical methods, reflecting the high accuracy of spectral differentiation at the Chebyshev-clustered boundary nodes.
+The spectral method achieves a PDE residual of $7.23\times 10^{-6}$ with only 900 degrees of freedom per group---a factor of 11 fewer DOF than the FDM/FEM while achieving comparable PDE accuracy. The per-DOF efficiency of spectral methods for smooth problems is evident here. The boundary condition residual ($6.04\times 10^{-5}$) is the best among the numerical methods, reflecting the high accuracy of spectral differentiation at the Chebyshev-clustered boundary nodes.
 
 \paragraph{Finite Difference Method.}
-FDM achieves a PDE residual of \num{9.07e-5}, consistent with the expected $O(h^2) = O(10^{-4})$ accuracy on the $101 \times 101$ grid. The boundary condition residual (\num{3.97e-4}) reflects the lower accuracy of one-sided difference stencils at the boundary compared to the interior central differences.
+FDM achieves a PDE residual of $9.07\times 10^{-5}$, consistent with the expected $O(h^2) = O(10^{-4})$ accuracy on the $101 \times 101$ grid. The boundary condition residual ($3.97\times 10^{-4}$) reflects the lower accuracy of one-sided difference stencils at the boundary compared to the interior central differences.
 
 \paragraph{Physics-Informed Neural Network.}
-The PINN delivers the weakest accuracy among all methods, with a PDE residual of \num{9.54e-3} and a boundary condition residual of \num{9.13e-3}. This residual level is 13 orders of magnitude above the analytical solution and 2--4 orders above the classical numerical methods. The training time of \num{98.6}\,s is the longest among all methods---a factor of $\sim 5{,}800$ times slower than the analytical solver. The poor accuracy-cost tradeoff is characteristic of PINNs applied to coupled PDE systems without specialized training strategies (adaptive collocation, domain decomposition, or multi-scale architectures).
+The PINN delivers the weakest accuracy among all methods, with a PDE residual of $9.54\times 10^{-3}$ and a boundary condition residual of $9.13\times 10^{-3}$. This residual level is 13 orders of magnitude above the analytical solution and 2--4 orders above the classical numerical methods. The training time of 98.6\,s is the longest among all methods---a factor of $\sim 5{,}800$ times slower than the analytical solver. The poor accuracy-cost tradeoff is characteristic of PINNs applied to coupled PDE systems without specialized training strategies (adaptive collocation, domain decomposition, or multi-scale architectures).
 
 \paragraph{Accuracy ordering.}
 The hierarchy of PDE residuals is:
 \begin{equation}
-    \text{Analytical} (\num{3e-16}) \ll \text{FEM} (\num{9e-7}) < \text{Spectral} (\num{7e-6}) < \text{FDM} (\num{9e-5}) \ll \text{PINN} (\num{1e-2}).
+    \text{Analytical} (3{\times}10^{-16}) \ll \text{FEM} (9{\times}10^{-7}) < \text{Spectral} (7{\times}10^{-6}) < \text{FDM} (9{\times}10^{-5}) \ll \text{PINN} (10^{-2}).
 \end{equation}
 
 This ordering reflects the fundamental nature of each method: exact evaluation of an analytical formula, variational optimization, exponential spectral convergence, algebraic finite-difference convergence, and neural network optimization landscape, respectively.
@@ -730,7 +723,7 @@ Figure~\ref{fig:flux_fields} displays the analytical flux fields for both energy
 
 Several physical features are evident from the flux distributions:
 
-\begin{itemize}[leftmargin=2em, itemsep=3pt]
+\begin{itemize}
     \item \textbf{Boundary-driven asymmetry}: The flux is antisymmetric about $y = 0$, directly reflecting the linear boundary data $f(y) = y$. The zero-flux contour runs along $y = 0$, with positive flux in the upper half and negative flux in the lower half.
 
     \item \textbf{Penetration depth}: The flux magnitude decreases from left ($x = -0.5$) to right ($x = 0.5$), with the rate of decrease governed by the eigenvalues $\mu_p$ of the coupling matrix. The flux penetrates further for the mode with the smaller effective $\alpha$ ($\mu_1 \approx -0.026$, so $\alpha_{1,n}^2 = (n\pi)^2 - 0.026$ is slightly smaller than $(n\pi)^2$) and decays more rapidly for the larger eigenvalue mode ($\mu_2 \approx 0.233$, $\alpha_{2,n}^2 = (n\pi)^2 + 0.233$ is slightly larger).
@@ -787,7 +780,7 @@ Table~\ref{tab:pointwise_errors} reports the $L_2$ and $L_\infty$ errors of each
 \centering
 \caption{Pointwise flux errors of numerical methods vs.\ analytical solution ($N=200$ Fourier modes). $\|\cdot\|_{L_2}$ denotes RMS error over the evaluation grid; $\|\cdot\|_{L_\infty}$ denotes max absolute error.}
 \label{tab:pointwise_errors}
-\begin{tabular}{lSSSS}
+\begin{tabular}{lrrrr}
 \toprule
 {Method} & {$\phi_1$ $L_2$} & {$\phi_1$ $L_\infty$} & {$\phi_2$ $L_2$} & {$\phi_2$ $L_\infty$} \\
 \midrule
@@ -808,7 +801,7 @@ Table~\ref{tab:spectral_convergence} presents the PDE residual convergence of th
 \centering
 \caption{Spectral method PDE residual convergence with collocation points $N$. Residuals evaluated by finite differencing the spectral solution at 6 interior points.}
 \label{tab:spectral_convergence}
-\begin{tabular}{rSS}
+\begin{tabular}{rrr}
 \toprule
 {$N$} & {Max PDE Residual} & {Solve Time (s)} \\
 \midrule
@@ -852,7 +845,7 @@ The analytical solution derived in Sections~\ref{sec:analytical} and~\ref{sec:ex
 \subsection{Experimental Setup}
 
 We construct a Famou experiment where:
-\begin{itemize}[leftmargin=2em, itemsep=2pt]
+\begin{itemize}
 \item \textbf{Initial program (seed)}: An FDM $101\times101$ solver achieving combined\_score = 0.071.
 \item \textbf{Evaluator}: An embedded analytical solver (this paper's method, $N=200$) provides exact flux values at 4 test points, plus PDE and BC residual evaluation. The combined score is $\text{accuracy} \times \text{PDE-factor} \times \text{BC-factor}$, where $\text{accuracy} = 1/(1 + 100 \cdot \bar{\varepsilon}_{\text{rel}})$.
 \item \textbf{Evolution}: 30 iterations with population size 10 and 2 islands.
@@ -862,7 +855,7 @@ We construct a Famou experiment where:
 
 After 30 evolution iterations, the best achieved combined\_score remains at 0.07 (seed level), with the evolved solver achieving mean relative error $6\times10^{-4}$ but max PDE residual 19.85. The evolution struggled to improve upon the FDM seed, primarily because:
 
-\begin{enumerate}[leftmargin=2em, itemsep=2pt]
+\begin{enumerate}
 \item The evaluator rewards both pointwise accuracy \textit{and} PDE/BC residuals, and the LLM-generated variants tended to optimize one metric at the expense of the other.
 \item FDM already provides near-optimal accuracy for its discretization level; further improvement requires fundamentally different algorithmic approaches (higher-order schemes, adaptive refinement, or spectral methods).
 \end{enumerate}
@@ -914,7 +907,7 @@ We argue that the development of exact benchmarks should accompany the developme
 
 We have derived the first closed-form analytical solution for the two-dimensional, two-group steady-state neutron diffusion equation with inhomogeneous Neumann boundary conditions on a rectangular domain. The solution is constructed via Fourier--cosine expansion in the $y$-direction combined with eigendecomposition of the group-coupling matrix $\mat{D}^{-1}\mat{A}$, yielding independent hyperbolic ODEs in $x$ whose coefficients are determined algebraically from the boundary data. The entire procedure is non-iterative, non-discretized (beyond Fourier truncation), and produces a closed-form expression that can be evaluated at arbitrary spatial points to any desired floating-point precision.
 
-Benchmarking against four numerical and data-driven solvers demonstrates the value of an exact reference. The analytical solution achieves PDE residuals at the level of machine epsilon ($\num{2.81e-16}$), outperforming the best numerical method (FEM, $\num{9.20e-7}$) by 10 orders of magnitude and the PINN ($\num{9.54e-3}$) by 13 orders. The FDM convergence study confirms the expected $O(h^2)$ rate, independently validating both the FDM implementation and the analytical reference. The accuracy--efficiency comparison reveals that the analytical solver is not only the most accurate but also the fastest, requiring \num{0.017}\,s compared to \num{98.6}\,s for the PINN.
+Benchmarking against four numerical and data-driven solvers demonstrates the value of an exact reference. The analytical solution achieves PDE residuals at the level of machine epsilon ($2.81\times 10^{-16}$), outperforming the best numerical method (FEM, $9.2\times 10^{-7}$) by 10 orders of magnitude and the PINN ($9.54\times 10^{-3}$) by 13 orders. The FDM convergence study confirms the expected $O(h^2)$ rate, independently validating both the FDM implementation and the analytical reference. The accuracy--efficiency comparison reveals that the analytical solver is not only the most accurate but also the fastest, requiring 0.017\,s compared to 98.6\,s for the PINN.
 
 The analytical solution serves three roles going forward. First, as a \textbf{verification benchmark}: it provides an unambiguous ground truth for testing numerical PDE solvers, with residuals bounded by machine epsilon rather than discretization error. Second, as a \textbf{training reference}: neural PDE solvers that incorporate supervised loss terms can use the analytical solution to generate arbitrarily large and precise training datasets at arbitrary spatial resolution. Third, as a \textbf{methodological template}: the Fourier--eigendecomposition technique demonstrated here is not specific to neutron diffusion and can be applied to any coupled elliptic PDE system on rectangular domains where at least one pair of opposing boundaries admits a Fourier eigenfunction expansion.
 
@@ -922,7 +915,7 @@ The analytical solution serves three roles going forward. First, as a \textbf{ve
 
 The analytical method developed in this work has several structural limitations that define the scope of its applicability:
 
-\begin{enumerate}[leftmargin=2em, itemsep=3pt]
+\begin{enumerate}
 \item \textbf{Rectangular geometry}: The Fourier--cosine expansion requires two opposing boundaries with homogeneous Neumann conditions. The method does not extend directly to L-shaped domains, cylindrical geometries, or domains with curved boundaries.
 
 \item \textbf{Homogeneous medium}: The diffusion coefficients $D_g$ and cross-sections $\Sigma$ must be spatially uniform throughout the domain. Heterogeneous media (fuel assemblies, control rods) require different techniques such as interface-matching conditions or nodal decomposition.

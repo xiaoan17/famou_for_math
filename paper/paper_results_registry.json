@@ -65,7 +65,49 @@
       "timestamp": "2026-03-13"
     }
   },
-  "comparison_table": null,
-  "figures": [],
-  "paper_status": "not_started"
+  "figures": {
+    "flux_fields": {
+      "file": "paper/figs/flux_fields.png",
+      "pdf": "paper/figs/flux_fields.pdf",
+      "script": "scripts/analysis/plot_flux_fields.py",
+      "description": "2x2 heatmap: analytical phi1/phi2, FDM phi1, absolute error"
+    },
+    "residual_comparison": {
+      "file": "paper/figs/residual_comparison.png",
+      "pdf": "paper/figs/residual_comparison.pdf",
+      "script": "scripts/analysis/plot_residuals.py",
+      "description": "Grouped bar chart of max PDE and BC residuals across 5 methods (log scale)"
+    },
+    "convergence_fdm": {
+      "file": "paper/figs/convergence_fdm.png",
+      "pdf": "paper/figs/convergence_fdm.pdf",
+      "script": "scripts/analysis/plot_convergence.py",
+      "description": "Log-log FDM convergence plot with O(h^2) reference line"
+    },
+    "cost_accuracy": {
+      "file": "paper/figs/cost_accuracy.png",
+      "pdf": "paper/figs/cost_accuracy.pdf",
+      "script": "scripts/analysis/plot_cost_accuracy.py",
+      "description": "Scatter plot: solve time vs max PDE residual (accuracy-efficiency tradeoff)"
+    },
+    "flux_profiles": {
+      "file": "paper/figs/flux_profiles.png",
+      "pdf": "paper/figs/flux_profiles.pdf",
+      "script": "scripts/analysis/plot_flux_profiles.py",
+      "description": "Line plots of phi1 along x-slice (y=0) and y-slice (x=0)"
+    }
+  },
+  "tables": {
+    "main_results_table": {
+      "file": "paper/tables/main_results_table.tex",
+      "script": "scripts/analysis/generate_tables.py",
+      "description": "Full 5-method comparison table"
+    },
+    "convergence_table": {
+      "file": "paper/tables/convergence_table.tex",
+      "script": "scripts/analysis/generate_tables.py",
+      "description": "FDM convergence table with convergence rates"
+    }
+  },
+  "paper_status": "figures_and_tables_complete"
 }

@@ -32,13 +32,23 @@
 | Spectral N=30 | 7.23e-06 | 6.04e-05 | 0.079 | DONE |
 | PINN (3×64 MLP) | 9.54e-03 | 9.13e-03 | 98.624 | DONE |
 
+## Famou Experiment
+- **Experiment ID**: exp-20260313202324-i5445e
+- **Name**: neutron_t1_r1
+- **Status**: CREATED → evolving
+- **Task dir**: `famou/task1/`
+- **Seed score**: validity=1.0, combined_score=0.071 (FDM 101×101)
+- **Target**: combined_score > 0.95
+- **Monitor**: `famou-ctl experiment status exp-20260313202324-i5445e --api-url https://pro-service.famou.com --json`
+
 ## Team Status
 | Agent | Status | Current Task |
 |-------|--------|--------------|
-| Team Lead (you) | Active | Orchestrating |
-| Background Researcher | Spawning | Literature survey |
-| Experiment Runner | Spawning | Run solvers |
-| Paper Writer | Pending | Awaiting results |
+| Team Lead | Active | Orchestrating |
+| Background Researcher | Done | Literature survey complete |
+| Experiment Runner | Done | All 5 solvers run |
+| Git & Doc Manager | Active | Commits & GitHub push |
+| Paper Writer | Pending | Awaiting Famou results |
 | Strict Reviewer | Pending | Awaiting draft |
 
 ## Key Milestones

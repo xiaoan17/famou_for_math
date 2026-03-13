@@ -1,6 +1,8 @@
 """
 Pointwise flux comparison: L2 and L-infinity errors of numerical solutions vs analytical reference.
-All solvers return dict with 'phi1', 'phi2', 'x', 'y' arrays.
+All solvers return dict with 'phi1'[ix,iy], 'phi2'[ix,iy], 'x', 'y' arrays.
+FDM/FEM: phi[ix, iy], axes = (x_coords, y_coords)
+Spectral: phi[ix, iy], axes = (x_nodes, y_nodes) but unsorted (Chebyshev)
 """
 import sys
 import os
@@ -9,7 +11,7 @@ import time
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
-WORK_DIR = os.path.join(os.path.dirname(__file__), '..', '..')
+WORK_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 sys.path.insert(0, os.path.join(WORK_DIR, 'scripts', 'numerical_solver'))
 sys.path.insert(0, os.path.join(WORK_DIR, 'baselines', 'fdm'))
 sys.path.insert(0, os.path.join(WORK_DIR, 'baselines', 'fem'))
@@ -20,7 +22,7 @@ import fdm_solver
 import fem_solver
 import spectral_solver
 
-# Dense evaluation grid (away from boundaries to avoid interpolation edge effects)
+# Dense evaluation grid
 xs = np.linspace(-0.45, 0.45, 30)
 ys = np.linspace(-0.45, 0.45, 30)
 XX, YY = np.meshgrid(xs, ys)
@@ -38,12 +40,11 @@ norm2 = float(np.sqrt(np.mean(phi2_ref**2)))
 results = {}
 
 
-def eval_interp(x_grid, y_grid, phi_grid, xq, yq):
-    """Interpolate 2D grid (phi indexed [iy, ix]) at query points."""
-    # phi_grid shape: (Nx, Ny) or (Ny, Nx)? Check by convention.
-    interp = RegularGridInterpolator((y_grid, x_grid), phi_grid.T, method='linear',
-                                      bounds_error=False, fill_value=None)
-    return interp(np.column_stack([yq, xq]))
+def interp_solver(x_axis, y_axis, phi_xy, xq, yq):
+    """Interpolate phi[ix,iy] grid (x=rows, y=cols) at query points (xq, yq)."""
+    interp = RegularGridInterpolator((x_axis, y_axis), phi_xy, method='linear',
+                                     bounds_error=False, fill_value=None)
+    return interp(np.column_stack([xq, yq]))
 
 
 # ── FDM ──────────────────────────────────────────────────────────────────────
@@ -52,8 +53,8 @@ t0 = time.time()
 res_fdm = fdm_solver.solve_fdm(101, 101)
 t_fdm = time.time() - t0
 
-phi1_fdm_pts = eval_interp(res_fdm['x'], res_fdm['y'], res_fdm['phi1'], xf, yf)
-phi2_fdm_pts = eval_interp(res_fdm['x'], res_fdm['y'], res_fdm['phi2'], xf, yf)
+phi1_fdm_pts = interp_solver(res_fdm['x'], res_fdm['y'], res_fdm['phi1'], xf, yf)
+phi2_fdm_pts = interp_solver(res_fdm['x'], res_fdm['y'], res_fdm['phi2'], xf, yf)
 
 err1 = np.abs(phi1_fdm_pts - phi1_ref)
 err2 = np.abs(phi2_fdm_pts - phi2_ref)
@@ -75,8 +76,8 @@ t0 = time.time()
 res_fem = fem_solver.solve_fem(101, 101)
 t_fem = time.time() - t0
 
-phi1_fem_pts = eval_interp(res_fem['x'], res_fem['y'], res_fem['phi1'], xf, yf)
-phi2_fem_pts = eval_interp(res_fem['x'], res_fem['y'], res_fem['phi2'], xf, yf)
+phi1_fem_pts = interp_solver(res_fem['x'], res_fem['y'], res_fem['phi1'], xf, yf)
+phi2_fem_pts = interp_solver(res_fem['x'], res_fem['y'], res_fem['phi2'], xf, yf)
 
 err1 = np.abs(phi1_fem_pts - phi1_ref)
 err2 = np.abs(phi2_fem_pts - phi2_ref)
@@ -98,17 +99,17 @@ t0 = time.time()
 res_spec = spectral_solver.solve_spectral(30)
 t_spec = time.time() - t0
 
-# Spectral grid uses Chebyshev points, sorted
-x_spec = np.sort(res_spec['x'])
-y_spec = np.sort(res_spec['y'])
-# Need to reorder phi arrays to match sorted axes
+# Sort Chebyshev nodes and reorder phi accordingly
 xi_idx = np.argsort(res_spec['x'])
 yi_idx = np.argsort(res_spec['y'])
-phi1_spec_sorted = res_spec['phi1'][np.ix_(yi_idx, xi_idx)]
-phi2_spec_sorted = res_spec['phi2'][np.ix_(yi_idx, xi_idx)]
+x_spec = res_spec['x'][xi_idx]
+y_spec = res_spec['y'][yi_idx]
+# phi[ix, iy] -> after sorting rows by x and cols by y
+phi1_spec = res_spec['phi1'][np.ix_(xi_idx, yi_idx)]
+phi2_spec = res_spec['phi2'][np.ix_(xi_idx, yi_idx)]
 
-phi1_spec_pts = eval_interp(x_spec, y_spec, phi1_spec_sorted, xf, yf)
-phi2_spec_pts = eval_interp(x_spec, y_spec, phi2_spec_sorted, xf, yf)
+phi1_spec_pts = interp_solver(x_spec, y_spec, phi1_spec, xf, yf)
+phi2_spec_pts = interp_solver(x_spec, y_spec, phi2_spec, xf, yf)
 
 err1 = np.abs(phi1_spec_pts - phi1_ref)
 err2 = np.abs(phi2_spec_pts - phi2_ref)

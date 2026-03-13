@@ -6,7 +6,7 @@
     "phi2_L2_abs": NaN,
     "phi2_Linf_abs": NaN,
     "phi2_L2_rel": NaN,
-    "solve_time": 0.17552614212036133
+    "solve_time": 0.15702295303344727
   },
   "FEM": {
     "phi1_L2_abs": NaN,
@@ -15,7 +15,7 @@
     "phi2_L2_abs": NaN,
     "phi2_Linf_abs": NaN,
     "phi2_L2_rel": NaN,
-    "solve_time": 0.877648115158081
+    "solve_time": 0.9887957572937012
   },
   "Spectral": {
     "phi1_L2_abs": NaN,
@@ -24,6 +24,6 @@
     "phi2_L2_abs": NaN,
     "phi2_Linf_abs": NaN,
     "phi2_L2_rel": NaN,
-    "solve_time": 0.09163975715637207
+    "solve_time": 0.11224198341369629
   }
 }

@@ -16,19 +16,21 @@
 | File | Status | Description |
 |------|--------|-------------|
 | `scripts/numerical_solver/analytical_solver.py` | ✅ Complete | Fourier-cosine + eigendecomposition analytical solution |
+| `scripts/numerical_solver/run_analytical.py` | ✅ Complete | Runner script, saves analytical_results.json |
 | `baselines/fdm/fdm_solver.py` | ✅ Complete | FDM 101×101, sparse solve |
-| `baselines/fem/` | ❌ Empty | To implement |
-| `baselines/spectral/` | ❌ Empty | To implement |
-| `baselines/pinn/` | ❌ Empty | To implement |
+| `baselines/fdm/run_convergence.py` | ✅ Complete | FDM convergence study (N=21,51,101,201) |
+| `baselines/fem/fem_solver.py` | ✅ Complete | Bilinear Q1 Galerkin FEM, sparse solve |
+| `baselines/spectral/spectral_solver.py` | ✅ Complete | Chebyshev spectral collocation N=30 |
+| `baselines/pinn/pinn_solver.py` | ✅ Complete | PINN 2-64-64-64-2 MLP, PyTorch |
 
 ## Current Results
 | Method | Max PDE Residual | Max BC Residual | Time (s) | Status |
 |--------|-----------------|-----------------|----------|--------|
-| Analytical | TBD | TBD | TBD | needs run |
-| FDM 101×101 | TBD | TBD | TBD | needs run |
-| FEM | TBD | TBD | TBD | not impl |
-| Spectral | TBD | TBD | TBD | not impl |
-| PINN | TBD | TBD | TBD | not impl |
+| Analytical (N=200) | 2.81e-16 | 5.03e-07 | 0.017 | DONE |
+| FDM 101×101 | 9.07e-05 | 3.97e-04 | 0.134 | DONE |
+| FEM 101×101 (Q1) | 9.20e-07 | 4.05e-04 | 0.824 | DONE |
+| Spectral N=30 | 7.23e-06 | 6.04e-05 | 0.079 | DONE |
+| PINN (3×64 MLP) | 9.54e-03 | 9.13e-03 | 98.624 | DONE |
 
 ## Team Status
 | Agent | Status | Current Task |
@@ -40,8 +42,8 @@
 | Strict Reviewer | Pending | Awaiting draft |
 
 ## Key Milestones
-- [ ] All solvers run + results.json saved
-- [ ] Comparison table complete
+- [x] All solvers run + results.json saved
+- [x] Comparison table complete
 - [ ] Figures generated (flux fields, convergence, BC residuals)
 - [ ] Paper draft v1 complete
 - [ ] Review Round 1 complete
@@ -78,8 +80,9 @@ No closed-form (non-iterative) analytical solution exists for the **2D coupled t
 - **Initial commit done**: ✅ 4caad5c
 
 ## conda environment
-- `base` environment (default), Python 3.x
-- Dependencies: numpy, scipy, matplotlib available
+- `ml_env` environment for all solvers (scipy, PyTorch available)
+- Run command: `conda run -n ml_env python <script>`
+- Dependencies: numpy, scipy, matplotlib, torch available
 
 ## Important Notes
 - No GPU required — all solvers CPU-based

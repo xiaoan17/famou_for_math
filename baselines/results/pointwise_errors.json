@@ -1,29 +1,29 @@
 {
   "FDM": {
-    "phi1_L2_abs": NaN,
-    "phi1_Linf_abs": NaN,
-    "phi1_L2_rel": NaN,
-    "phi2_L2_abs": NaN,
-    "phi2_Linf_abs": NaN,
-    "phi2_L2_rel": NaN,
-    "solve_time": 0.13498806953430176
+    "phi1_L2_abs": 3.111273488053741e-06,
+    "phi1_Linf_abs": 1.4807145778339414e-05,
+    "phi1_L2_rel": 8.974687196023719e-05,
+    "phi2_L2_abs": 6.729086047150537e-06,
+    "phi2_Linf_abs": 3.377664639961364e-05,
+    "phi2_L2_rel": 0.00010263953395166185,
+    "solve_time": 0.1383519172668457
   },
   "FEM": {
-    "phi1_L2_abs": NaN,
-    "phi1_Linf_abs": NaN,
-    "phi1_L2_rel": NaN,
-    "phi2_L2_abs": NaN,
-    "phi2_Linf_abs": NaN,
-    "phi2_L2_rel": NaN,
-    "solve_time": 0.8484597206115723
+    "phi1_L2_abs": 3.3057650274414978e-06,
+    "phi1_Linf_abs": 1.3681104899035401e-05,
+    "phi1_L2_rel": 9.535711720219482e-05,
+    "phi2_L2_abs": 6.138970750419136e-06,
+    "phi2_Linf_abs": 2.6247714970561997e-05,
+    "phi2_L2_rel": 9.363843653518491e-05,
+    "solve_time": 0.9186491966247559
   },
   "Spectral": {
-    "phi1_L2_abs": NaN,
-    "phi1_Linf_abs": NaN,
-    "phi1_L2_rel": NaN,
-    "phi2_L2_abs": NaN,
-    "phi2_Linf_abs": NaN,
-    "phi2_L2_rel": NaN,
-    "solve_time": 0.07236409187316895
+    "phi1_L2_abs": 0.06933455552958867,
+    "phi1_Linf_abs": 0.23122472298549646,
+    "phi1_L2_rel": 2.000004018105935,
+    "phi2_L2_abs": 0.1311266570346745,
+    "phi2_Linf_abs": 0.444901670483363,
+    "phi2_L2_rel": 2.000090186449254,
+    "solve_time": 0.08121991157531738
   }
 }

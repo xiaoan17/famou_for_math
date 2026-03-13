@@ -28,7 +28,7 @@ yf = np.tile(ys, len(xs))       # len 625
 
 print("Computing analytical reference (N=500)...")
 t0 = time.time()
-phi1_ref, phi2_ref = evaluate_flux(xf, yf, N_terms=500)
+phi1_ref, phi2_ref = evaluate_flux(xf, yf, N_terms=200)
 print(f"  Done in {time.time()-t0:.2f}s  phi1 range: [{phi1_ref.min():.4f}, {phi1_ref.max():.4f}]")
 
 norm1 = float(np.sqrt(np.mean(phi1_ref**2)))

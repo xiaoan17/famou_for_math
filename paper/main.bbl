@@ -1,0 +1,170 @@
+\begin{thebibliography}{25}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Anonymous(2024)]{famou2024}
+Anonymous.
+\newblock Famou: {LLM}-based evolutionary optimization for numerical solvers,
+  2024.
+\newblock Internal framework.
+
+\bibitem[Bodmann et~al.(2007)]{bodmann2007neutron}
+B.~E.~J. Bodmann et~al.
+\newblock Analytical solution of the neutron diffusion equation for a
+  multi-layer slab.
+\newblock \emph{Progress in Nuclear Energy}, 2007.
+
+\bibitem[Cabral~da Silva et~al.(2023)Cabral~da Silva, Moura~Neto, and
+  Alves~Filho]{cabraldasilva2023sgf}
+A.~C. Cabral~da Silva, F.~D. Moura~Neto, and H.~Alves~Filho.
+\newblock Spectral {G}reen's function method for neutron diffusion.
+\newblock \emph{TEMA -- Tend{\^e}ncias em Matem{\'a}tica Aplicada e
+  Computacional}, 2023.
+
+\bibitem[Cho et~al.(2016)Cho, Song, and Park]{cho2016sensitivity}
+J.~Y. Cho, J.~S. Song, and C.~J. Park.
+\newblock Sensitivity analysis of {G}alerkin finite element method neutron
+  diffusion solver.
+\newblock \emph{Nuclear Engineering and Technology}, 48\penalty0 (2):\penalty0
+  402--411, 2016.
+
+\bibitem[Cotta(1993)]{cotta1993integral}
+R.~M. Cotta.
+\newblock \emph{Integral Transforms in Computational Heat and Fluid Flow}.
+\newblock CRC Press, 1993.
+
+\bibitem[Dion and Bhatt(2013)]{dion2013fourier}
+M.~Dion and S.~M. Bhatt.
+\newblock Fourier transform methods for two-group lattice diffusion and
+  transport problems.
+\newblock \emph{Annals of Nuclear Energy}, 62:\penalty0 76--84, 2013.
+
+\bibitem[Duderstadt and Hamilton(1976)]{duderstadt1976nuclear}
+J.~J. Duderstadt and L.~J. Hamilton.
+\newblock \emph{Nuclear Reactor Analysis}.
+\newblock Wiley, New York, 1976.
+
+\bibitem[El-Ajou et~al.(2019)El-Ajou, Shqair, Ghabar, Burqan, and
+  Saadeh]{elajou2019analytical}
+A.~El-Ajou, M.~Shqair, I.~Ghabar, A.~Burqan, and R.~Saadeh.
+\newblock Analytical solutions for multi-energy groups of neutron diffusion
+  equations by a residual power series method.
+\newblock \emph{Mathematics}, 7\penalty0 (7):\penalty0 633, 2019.
+
+\bibitem[Han(2009)]{han2009computational}
+G.-C. Han.
+\newblock Computational methods for multidimensional neutron diffusion
+  problems.
+\newblock \emph{Science and Technology of Nuclear Installations}, 2009.
+
+\bibitem[Huang et~al.(2024)Huang, Liu, and Li]{huang2024decoupling}
+Y.~Huang, D.~Liu, and Q.~Li.
+\newblock Decoupling residual loss function for multi-group neutron diffusion
+  equations using physics-informed neural networks.
+\newblock \emph{arXiv preprint arXiv:2411.15693}, 2024.
+
+\bibitem[Lamarsh(1966)]{lamarsh1966introduction}
+J.~R. Lamarsh.
+\newblock \emph{Introduction to Nuclear Engineering}.
+\newblock Addison-Wesley, Reading, MA, 1966.
+
+\bibitem[Lemos et~al.(2008)Lemos, Vilhena, and Bodmann]{lemos2008analytical}
+R.~S. Lemos, M.~T. Vilhena, and B.~E.~J. Bodmann.
+\newblock Analytical solution for two-group diffusion equations in a
+  multilayered slab using the {L}aplace {T}ransform {T}echnique.
+\newblock \emph{Annals of Nuclear Energy}, 35\penalty0 (2):\penalty0 169--176,
+  2008.
+
+\bibitem[Li et~al.(2021)Li, Kovachki, Azizzadenesheli, Liu, Bhatt, Stuart, and
+  Anandkumar]{li2021fourier}
+Z.~Li, N.~Kovachki, K.~Azizzadenesheli, B.~Liu, K.~Bhatt, A.~Stuart, and
+  A.~Anandkumar.
+\newblock Fourier neural operator for parametric partial differential
+  equations.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}, 2021.
+
+\bibitem[Liu et~al.(2023)Liu, Yang, Liu, and Lu]{liu2023physics}
+X.~Liu, X.~Yang, Y.~Liu, and D.~Lu.
+\newblock Physics-constrained generalized inverse power method neural network
+  for the $k$-eigenvalue problem with discontinuous material interfaces.
+\newblock \emph{Nuclear Science and Techniques}, 34:\penalty0 163, 2023.
+
+\bibitem[Lozano et~al.(2008)Lozano, Garc{\'i}a-Herranz, Ahnert, and
+  Aragones]{lozano2008andes}
+J.~A. Lozano, N.~Garc{\'i}a-Herranz, C.~Ahnert, and J.~M. Aragones.
+\newblock The analytic nodal diffusion solver {ANDES} in multigroups for 3{D}
+  rectangular geometry: development and performance analysis.
+\newblock \emph{Annals of Nuclear Energy}, 35\penalty0 (12):\penalty0
+  2365--2374, 2008.
+
+\bibitem[Lu et~al.(2021)Lu, Jin, Pang, Zhang, and Karniadakis]{lu2021deeponet}
+L.~Lu, P.~Jin, G.~Pang, Z.~Zhang, and G.~E. Karniadakis.
+\newblock Learning nonlinear operators via {D}eep{ON}et based on the universal
+  approximation theorem of operators.
+\newblock \emph{Nature Machine Intelligence}, 3:\penalty0 218--229, 2021.
+
+\bibitem[Lu et~al.(2022)Lu, Meng, Cai, Mao, Goswami, Zhang, and
+  Karniadakis]{lu2022comprehensive}
+L.~Lu, X.~Meng, S.~Cai, Z.~Mao, S.~Goswami, Z.~Zhang, and G.~E. Karniadakis.
+\newblock A comprehensive and fair comparison of two neural operators (with
+  practical extensions) based on {FAIR} data.
+\newblock \emph{Computer Methods in Applied Mechanics and Engineering},
+  393:\penalty0 114778, 2022.
+
+\bibitem[Raissi et~al.(2019)Raissi, Perdikaris, and
+  Karniadakis]{raissi2019physics}
+M.~Raissi, P.~Perdikaris, and G.~E. Karniadakis.
+\newblock Physics-informed neural networks: A deep learning framework for
+  solving forward and inverse problems involving nonlinear partial differential
+  equations.
+\newblock \emph{Journal of Computational Physics}, 378:\penalty0 686--707,
+  2019.
+
+\bibitem[Smith(1983)]{smith1983nodal}
+K.~S. Smith.
+\newblock Nodal method storage reduction by nonlinear iteration.
+\newblock In \emph{Transactions of the American Nuclear Society}, volume~44,
+  1983.
+
+\bibitem[Stacey(2007)]{stacey2007nuclear}
+W.~M. Stacey.
+\newblock \emph{Nuclear Reactor Physics}.
+\newblock Wiley-VCH, Weinheim, 2nd edition, 2007.
+
+\bibitem[Wang et~al.(2021)Wang, Wang, and Perdikaris]{wang2021learning}
+S.~Wang, H.~Wang, and P.~Perdikaris.
+\newblock Learning the solution operator of parametric partial differential
+  equations with physics-informed {D}eep{ON}ets.
+\newblock \emph{Science Advances}, 7\penalty0 (40), 2021.
+
+\bibitem[Yang et~al.(2023)Yang, Gong, Zhang, Yang, Zhang, Hu, and
+  Peng]{yang2023depinn}
+Y.~Yang, H.~Gong, S.~Zhang, Q.~Yang, Z.~Zhang, Q.~Hu, and S.~Peng.
+\newblock Data-enabled physics-informed neural network for solving neutron
+  diffusion eigenvalue problems.
+\newblock \emph{Annals of Nuclear Energy}, 183:\penalty0 109656, 2023.
+
+\bibitem[Zanette et~al.(2018)Zanette, Leite, Vilhena, and
+  Bodmann]{zanette2018modified}
+R.~Zanette, S.~B. Leite, M.~T. Vilhena, and B.~E.~J. Bodmann.
+\newblock Modified power method for multigroup neutron diffusion problems in
+  two-dimensional {C}artesian geometry.
+\newblock \emph{Annals of Nuclear Energy}, 111:\penalty0 136--145, 2018.
+
+\bibitem[Zanette et~al.(2021)Zanette, Leite, and Vilhena]{zanette2021modified}
+R.~Zanette, S.~B. Leite, and M.~T. Vilhena.
+\newblock Modified power method with {F}ourier sine transform for multigroup
+  slab problems.
+\newblock \emph{Brazilian Journal of Radiation Sciences}, 9\penalty0 (1), 2021.
+
+\bibitem[Zhang et~al.(2026)Zhang, Chen, Qiu, and Li]{zhang2026r2pinn}
+Y.~Zhang, S.~Chen, R.~Qiu, and Y.~Li.
+\newblock {R$^2$-PINN}: Residual-based adaptive resampling physics-informed
+  neural network for neutron diffusion equations.
+\newblock \emph{Nuclear Science and Techniques}, 2026.
+
+\end{thebibliography}

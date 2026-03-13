@@ -1,0 +1,26 @@
+experiment:
+  name: neutron_diff_task1_round1
+
+task_description: |
+  Evolve a high-accuracy numerical solver for the 2D two-group neutron diffusion
+  equation on [-0.5, 0.5]^2 with inhomogeneous Neumann boundary conditions.
+  The solver must implement solution() -> (phi1_func, phi2_func).
+  Target: minimize mean relative error vs analytical reference (ground truth).
+  A perfect solver achieves machine-precision residuals (PDE res < 1e-12).
+  The current FDM baseline scores ~0.07. Target: score > 0.95.
+
+initial_program: "init.py"
+evaluator: "evaluator.py"
+system_message: "prompt.md"
+
+evolve_config:
+  max_iterations: 30
+  population_size: 10
+  num_islands: 2
+  temperature: 0.8
+  island_size: 5
+
+llm_config:
+  model: "claude-sonnet-4-6"
+  max_tokens: 4096
+  temperature: 0.8

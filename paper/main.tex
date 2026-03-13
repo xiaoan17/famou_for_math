@@ -46,7 +46,7 @@
 High-fidelity neutron flux prediction is fundamental to nuclear reactor design and safety analysis, yet analytical benchmarks for coupled multi-group diffusion equations with non-trivial boundary conditions remain scarce.
 We derive the first closed-form analytical solution for the two-dimensional, two-group steady-state neutron diffusion equation on a square domain with inhomogeneous Neumann boundary conditions, where the left boundary prescribes a spatially varying incoming current and the remaining three boundaries impose zero normal current.
 Our method combines a Fourier--cosine expansion in the $y$-direction---whose basis functions exactly satisfy the homogeneous Neumann conditions on two sides---with eigendecomposition of the group-coupling matrix $\mat{D}^{-1}\mat{A}$ to decouple the fast and thermal groups, yielding independent hyperbolic ODEs in $x$ whose solutions satisfy the remaining boundary conditions algebraically.
-The solution achieves machine-precision PDE residuals ($\leq \num{3e-16}$), outperforming the finite difference method (\num{9e-5}), finite element method (\num{9e-7}), spectral collocation (\num{7e-6}), and physics-informed neural networks (\num{1e-2}) by orders of magnitude, and serves as an exact benchmark for validating AI-for-science PDE solvers.
+The solution achieves machine-precision PDE residuals ($\leq \num{3e-16}$), outperforming all numerical methods by 9--13 orders of magnitude, and serves as an exact benchmark for validating AI-for-science PDE solvers. Pointwise $L_\infty$ errors of the best numerical method (FEM, $101\times101$) are $1.4\times10^{-5}$ against the analytical reference.
 \end{abstract}
 
 % ============================================================================
@@ -211,17 +211,19 @@ Multiplying Eq.~\eqref{eq:matrix_pde} by $\mat{D}^{-1}$ yields the standard form
 
 The coupling matrix $\mat{M}$ is the central algebraic object in our analysis. Its characteristic polynomial is:
 \begin{equation}
-    \det(\mat{M} - \mu\mat{I}) = \mu^2 - (0.0075 + 0.2)\mu + (0.0075 \times 0.2 - (-0.25)(-0.03)) = \mu^2 - 0.2075\mu - 0.006,
+    \det(\mat{M} - \mu\mat{I}) = \mu^2 - (0.0075 + 0.2)\mu + \det(\mat{M}) = \mu^2 - 0.2075\mu - 0.006,
 \end{equation}
-where the negative constant term ($-0.006$) reflects the dominance of the off-diagonal coupling. The eigenvalues are:
+where $\det(\mat{M}) = 0.0075 \times 0.2 - (-0.25)(-0.03) = 0.0015 - 0.0075 = -0.006 < 0$. The negative determinant reflects the dominance of the off-diagonal coupling: the cross-group interactions (fast fission of thermal neutrons and moderation) overpower the product of the diagonal net-removal terms. The eigenvalues are:
 \begin{align}
-    \mu_1 &= \frac{0.2075 - \sqrt{0.2075^2 + 4 \times 0.006}}{2} \approx 0.02622, \label{eq:mu1} \\
-    \mu_2 &= \frac{0.2075 + \sqrt{0.2075^2 + 4 \times 0.006}}{2} \approx 0.18128. \label{eq:mu2}
+    \mu_1 &= \frac{0.2075 - \sqrt{0.2075^2 + 4 \times 0.006}}{2} = \frac{0.2075 - \sqrt{0.06706}}{2} \approx -0.02573, \label{eq:mu1} \\
+    \mu_2 &= \frac{0.2075 + \sqrt{0.06706}}{2} \approx 0.23323. \label{eq:mu2}
 \end{align}
 
-Both eigenvalues are positive and real, confirming that the system is subcritical and the boundary value problem is well-posed. The positivity of $\mu_1$ and $\mu_2$ ensures that the homogeneous equation $\nabla^2 \vect{\phi} = \mat{M}\vect{\phi}$ admits exponentially decaying solutions away from the source boundary, rather than oscillatory solutions that would arise from negative eigenvalues (supercritical configurations).
+The coupling matrix $\mat{M}$ has one negative eigenvalue ($\mu_1 \approx -0.026$) and one positive eigenvalue ($\mu_2 \approx 0.233$), reflecting the balance between cross-group coupling (which drives $\mu_1$ negative) and absorption-dominated loss (which keeps $\mu_2$ positive). This does not compromise the analytical solution: as shown in Section~\ref{sec:analytical}, the relevant quantity $\alpha_{p,n}^2 = \mu_p + (n\pi)^2$ is strictly positive for all contributing modes ($n \geq 1$, odd), since $(n\pi)^2 \geq \pi^2 \approx 9.87 \gg |\mu_1| \approx 0.026$.
 
-The eigenvectors of $\mat{M}$ define the natural modes of the coupled system. The first eigenvector (corresponding to $\mu_1 \approx 0.026$, the slower-decaying mode) represents a flux pattern where both fast and thermal groups have the same sign, while the second eigenvector (corresponding to $\mu_2 \approx 0.181$, the faster-decaying mode) represents a pattern where the groups have opposite contributions. These modes play the role of normal modes in coupled oscillator systems, and their identification through eigendecomposition is the key step that enables decoupling of the two-group equations.
+Although $\mu_1 < 0$, the solution is well-posed because for all odd $n \geq 1$, $\alpha_{p,n}^2 = \mu_p + (n\pi)^2 > 0$ (since $n\pi \geq \pi \approx 3.14$, far exceeding $|\mu_1| \approx 0.026$). The $n=0$ mode is identically zero ($b_0 = 0$), so the potentially problematic case $\alpha_{1,0}^2 = \mu_1 < 0$ never contributes to the solution.
+
+The eigenvectors of $\mat{M}$ define the natural modes of the coupled system. The first eigenvector (corresponding to $\mu_1 \approx -0.026$, the mode associated with stronger cross-group coupling) represents a flux pattern where the coupling between fast and thermal groups dominates the individual group dynamics, while the second eigenvector (corresponding to $\mu_2 \approx 0.233$, the absorption-dominated mode) represents a pattern governed primarily by within-group removal. These modes play the role of normal modes in coupled oscillator systems, and their identification through eigendecomposition is the key step that enables decoupling of the two-group equations.
 
 \subsection{Boundary Conditions}
 
@@ -349,7 +351,7 @@ The coupled $2\times 2$ ODE system~\eqref{eq:ode_matrix} can be decoupled by dia
 \begin{equation}\label{eq:eigenvalues_Mn}
     \alpha_{p,n}^2 = \mu_p + (n\pi)^2, \quad p = 1,2,
 \end{equation}
-where $\mu_1 \approx 0.0262$ and $\mu_2 \approx 0.1813$ are the eigenvalues of $\mat{M}$ from Eqs.~\eqref{eq:mu1}--\eqref{eq:mu2}.
+where $\mu_1 \approx -0.0257$ and $\mu_2 \approx 0.2332$ are the eigenvalues of $\mat{M}$ from Eqs.~\eqref{eq:mu1}--\eqref{eq:mu2}.
 
 This means the eigenvector matrix $\mat{P}$---whose columns are the eigenvectors of $\mat{M}$---serves as the decoupling transformation for every Fourier mode simultaneously. We need to compute $\mat{P}$ and $\mat{P}^{-1}$ only once, not separately for each $n$.
 
@@ -376,7 +378,7 @@ This yields two independent scalar ODEs:
 The eigendecomposition rotates the flux vector into a coordinate system aligned with the natural modes of the coupled system---directly analogous to normal modes in coupled oscillator mechanics. In the rotated coordinates, each mode diffuses independently with its own effective diffusion constant $\alpha_{p,n}^2$. The first mode ($p=1$) has a smaller diffusion constant ($\alpha_{1,n}^2 = \mu_1 + (n\pi)^2$) and decays more slowly in $x$, representing the long-range component of the flux. The second mode ($p=2$) has a larger diffusion constant and decays more rapidly, representing the short-range component.
 
 \paragraph{Diagonalizability.}
-For the two-group system, $\mat{M}$ is $2 \times 2$ with two distinct real positive eigenvalues. Distinctness is guaranteed whenever $(\mu_1 - \mu_2)^2 > 0$, which holds for all physical parameter combinations where the off-diagonal coupling is nonzero. The quantity $\alpha_{p,n}^2 = \mu_p + (n\pi)^2 > 0$ for all $n \geq 0$ and both $p$, since $\mu_p > 0$. This ensures that the ODE solutions are real-valued hyperbolic functions (not trigonometric), corresponding to exponentially decaying flux profiles away from the source boundary.
+For the two-group system, $\mat{M}$ is $2 \times 2$ with two distinct real eigenvalues. Distinctness is guaranteed whenever $(\mu_1 - \mu_2)^2 > 0$, which holds for all physical parameter combinations where the off-diagonal coupling is nonzero. The quantity $\alpha_{p,n}^2 = \mu_p + (n\pi)^2 > 0$ for all $n \geq 1$ (odd modes only) and both $p$, since $(n\pi)^2 \geq \pi^2 \approx 9.87 \gg |\mu_1| \approx 0.026$. The $n=0$ term is excluded because $b_0 = 0$. This ensures that the ODE solutions are real-valued hyperbolic functions (not trigonometric), corresponding to physically sensible flux profiles throughout the domain.
 
 \subsection{Satisfying the Right Boundary Condition}\label{sec:right_bc}
 
@@ -470,7 +472,7 @@ Combining all steps---Fourier expansion, eigendecomposition, $\cosh$ solutions, 
 \end{equation}
 where:
 \begin{itemize}[leftmargin=2em, itemsep=2pt]
-    \item $\alpha_{p,n} = \sqrt{\mu_p + (n\pi)^2}$ with $\mu_1 \approx 0.0262$, $\mu_2 \approx 0.1813$;
+    \item $\alpha_{p,n} = \sqrt{\mu_p + (n\pi)^2}$ with $\mu_1 \approx -0.0257$, $\mu_2 \approx 0.2332$;
     \item $P_{gp}$ are the components of the eigenvector matrix of $\mat{M} = \mat{D}^{-1}\mat{A}$;
     \item $c_{p,n} = [\mat{Q}_n^{-1}\,\vect{e}]_p \cdot b_n$ with $b_n = -4/(n\pi)^2$ and $\mat{Q}_n$ defined in~\eqref{eq:Q_matrix}.
 \end{itemize}
@@ -491,8 +493,7 @@ The Fourier--cosine series~\eqref{eq:full_solution} converges for two independen
 The combination of $O(n^{-2})$ algebraic decay and exponential damping produces extremely rapid convergence. In practice:
 \begin{itemize}[leftmargin=2em]
     \item $N = 50$ Fourier modes yield PDE residuals of order $10^{-12}$.
-    \item $N = 200$ modes push the PDE residual to $\sim 10^{-16}$---the limit of IEEE 754 double-precision floating-point arithmetic.
-    \item $N = 500$ modes yield residuals at or below $10^{-15}$ uniformly across the domain, with the residual floor set by floating-point roundoff rather than truncation error.
+    \item $N = 200$ modes push the PDE residual to $\sim 10^{-16}$---the limit of IEEE 754 double-precision floating-point arithmetic. Beyond $N \approx 250$, numerical overflow in $\cosh$ and $\sinh$ for large $\alpha_{p,n}$ caps further improvement; in practice, $N = 200$ provides machine-precision accuracy.
 \end{itemize}
 
 At the boundary $x = -0.5$ itself, the exponential damping vanishes (since $|x - 0.5| = 1$), and convergence relies solely on the algebraic $O(n^{-2})$ decay. This explains the slightly larger boundary condition residual ($\sim 10^{-7}$ for $N = 200$) compared to the interior PDE residual ($\sim 10^{-16}$). Increasing $N$ to 1000 or more would further reduce the boundary residual, though this exceeds typical precision requirements.

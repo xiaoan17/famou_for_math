@@ -1,0 +1,54 @@
+{
+  "methods": [
+    {
+      "name": "Analytical (Fourier-cosine + eigendecomposition)",
+      "n_terms": 200,
+      "max_pde_residual": 2.810252e-16,
+      "max_bc_residual": 5.030107e-07,
+      "total_time_s": 0.017,
+      "parameters": "200 Fourier modes"
+    },
+    {
+      "name": "Finite Difference Method (FDM)",
+      "grid": "101x101",
+      "dof": 20402,
+      "max_pde_residual": 9.070550e-05,
+      "max_bc_residual": 3.968559e-04,
+      "total_time_s": 0.134,
+      "parameters": "101x101 grid"
+    },
+    {
+      "name": "Finite Element Method (FEM) - Bilinear Q1",
+      "grid": "101x101",
+      "dof": 20402,
+      "max_pde_residual": 9.198628e-07,
+      "max_bc_residual": 4.050164e-04,
+      "total_time_s": 0.824,
+      "parameters": "101x101 Q1 mesh"
+    },
+    {
+      "name": "Chebyshev Spectral Collocation",
+      "N": 30,
+      "dof": 1800,
+      "max_pde_residual": 7.228101e-06,
+      "max_bc_residual": 6.041038e-05,
+      "total_time_s": 0.079,
+      "parameters": "30x30 collocation"
+    },
+    {
+      "name": "Physics-Informed Neural Network (PINN)",
+      "architecture": "2-64-64-64-2 MLP (tanh)",
+      "n_parameters": 8706,
+      "max_pde_residual": 9.542899e-03,
+      "max_bc_residual": 9.131503e-03,
+      "total_time_s": 98.624,
+      "parameters": "8706 trainable params"
+    }
+  ],
+  "fdm_convergence": [
+    {"N": 21, "max_pde_residual": 2.862308e-03, "max_bc_residual": 2.593546e-03, "time_s": 0.006, "h": 0.05},
+    {"N": 51, "max_pde_residual": 3.638104e-04, "max_bc_residual": 1.781309e-04, "time_s": 0.024, "h": 0.02},
+    {"N": 101, "max_pde_residual": 9.070550e-05, "max_bc_residual": 3.968559e-04, "time_s": 0.132, "h": 0.01},
+    {"N": 201, "max_pde_residual": 2.246608e-05, "max_bc_residual": 4.271128e-04, "time_s": 1.108, "h": 0.005}
+  ]
+}

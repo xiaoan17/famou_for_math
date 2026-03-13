@@ -248,63 +248,135 @@ def interpolate_at(
 
 
 def compute_pde_residual(
-    result: Dict, x_eval: float, y_eval: float, h: float = 1e-4
+    result: Dict, x_eval: float, y_eval: float, h: float = 1e-5
 ) -> Tuple[float, float]:
-    """Compute PDE residual using FD on interpolated solution."""
-    p1_c, p2_c = interpolate_at(result, x_eval, y_eval)
-    p1_xp, p2_xp = interpolate_at(result, x_eval + h, y_eval)
-    p1_xm, p2_xm = interpolate_at(result, x_eval - h, y_eval)
-    p1_yp, p2_yp = interpolate_at(result, x_eval, y_eval + h)
-    p1_ym, p2_ym = interpolate_at(result, x_eval, y_eval - h)
+    """Compute PDE residual using spectral differentiation matrices."""
+    N = result["N"]
+    x_nodes = result["x"]
+    y_nodes = result["y"]
+    phi1 = result["phi1"]
+    phi2 = result["phi2"]
 
-    lap1 = (p1_xp - 2 * p1_c + p1_xm) / h**2 + (p1_yp - 2 * p1_c + p1_ym) / h**2
-    lap2 = (p2_xp - 2 * p2_c + p2_xm) / h**2 + (p2_yp - 2 * p2_c + p2_ym) / h**2
+    _, D_mat = cheb_diff_matrix(N)
+    Dx = 2.0 * D_mat
+    Dxx = Dx @ Dx
+    Dy = 2.0 * D_mat
+    Dyy = Dy @ Dy
 
-    R1 = -D1 * lap1 + A11 * p1_c + A12 * p2_c
-    R2 = -D2 * lap2 + A21 * p1_c + A22 * p2_c
+    wx = _bary_weights(x_nodes)
+    wy = _bary_weights(y_nodes)
+
+    # d2phi/dx2 at all grid points, then interpolate
+    d2phi1_dx2 = Dxx @ phi1  # (N, N)
+    d2phi1_dy2 = (Dyy @ phi1.T).T  # phi1 (N_x, N_y), apply Dyy along y
+
+    d2phi2_dx2 = Dxx @ phi2
+    d2phi2_dy2 = (Dyy @ phi2.T).T
+
+    lap1 = d2phi1_dx2 + d2phi1_dy2
+    lap2 = d2phi2_dx2 + d2phi2_dy2
+
+    # PDE residual at all grid points
+    R1_grid = -D1 * lap1 + A11 * phi1 + A12 * phi2
+    R2_grid = -D2 * lap2 + A21 * phi1 + A22 * phi2
+
+    # Interpolate to evaluation point
+    R1_at_y = np.zeros(N)
+    R2_at_y = np.zeros(N)
+    for j in range(N):
+        R1_at_y[j] = _bary_interp_1d(x_nodes, R1_grid[:, j], wx, x_eval)
+        R2_at_y[j] = _bary_interp_1d(x_nodes, R2_grid[:, j], wx, x_eval)
+
+    R1 = _bary_interp_1d(y_nodes, R1_at_y, wy, y_eval)
+    R2 = _bary_interp_1d(y_nodes, R2_at_y, wy, y_eval)
     return R1, R2
 
 
 def compute_bc_residual(result: Dict) -> Dict[str, Tuple[float, float]]:
-    """Compute BC residuals."""
+    """Compute BC residuals using spectral differentiation.
+
+    For the spectral method, we use the differentiation matrix to compute
+    derivatives at boundary, then interpolate in the tangential direction
+    using barycentric interpolation.
+    """
     bc_res = {}
-    h = 1e-4
+    N = result["N"]
+    x_nodes = result["x"]
+    y_nodes = result["y"]
+    phi1 = result["phi1"]
+    phi2 = result["phi2"]
 
+    _, D_mat = cheb_diff_matrix(N)
+    Dx = 2.0 * D_mat
+    Dy = 2.0 * D_mat
+
+    wx = _bary_weights(x_nodes)
+    wy = _bary_weights(y_nodes)
+
+    i_left = N - 1   # x = -0.5
+    i_right = 0      # x = +0.5
+    j_top = 0        # y = +0.5
+    j_bottom = N - 1 # y = -0.5
+
+    # Compute dphi/dx at left boundary for all j using spectral diff
+    dphi1_dx_left = np.zeros(N)
+    dphi2_dx_left = np.zeros(N)
+    for j in range(N):
+        dphi1_dx_left[j] = np.dot(Dx[i_left, :], phi1[:, j])
+        dphi2_dx_left[j] = np.dot(Dx[i_left, :], phi2[:, j])
+
+    # Compute dphi/dx at right boundary
+    dphi1_dx_right = np.zeros(N)
+    dphi2_dx_right = np.zeros(N)
+    for j in range(N):
+        dphi1_dx_right[j] = np.dot(Dx[i_right, :], phi1[:, j])
+        dphi2_dx_right[j] = np.dot(Dx[i_right, :], phi2[:, j])
+
+    # Compute dphi/dy at top boundary
+    dphi1_dy_top = np.zeros(N)
+    dphi2_dy_top = np.zeros(N)
+    for i in range(N):
+        dphi1_dy_top[i] = np.dot(Dy[j_top, :], phi1[i, :])
+        dphi2_dy_top[i] = np.dot(Dy[j_top, :], phi2[i, :])
+
+    # Compute dphi/dy at bottom boundary
+    dphi1_dy_bot = np.zeros(N)
+    dphi2_dy_bot = np.zeros(N)
+    for i in range(N):
+        dphi1_dy_bot[i] = np.dot(Dy[j_bottom, :], phi1[i, :])
+        dphi2_dy_bot[i] = np.dot(Dy[j_bottom, :], phi2[i, :])
+
+    # Left BC: -D_g * dphi_g/dx = y at x=-0.5
     for y_val in [-0.3, 0.0, 0.2, 0.4]:
-        x_val = -0.5
-        p1_0, p2_0 = interpolate_at(result, x_val, y_val)
-        p1_h, p2_h = interpolate_at(result, x_val + h, y_val)
-        p1_2h, p2_2h = interpolate_at(result, x_val + 2 * h, y_val)
-        dx1 = (-3 * p1_0 + 4 * p1_h - p1_2h) / (2 * h)
-        dx2 = (-3 * p2_0 + 4 * p2_h - p2_2h) / (2 * h)
-        bc_res[f"left(x={x_val},y={y_val})"] = (-D1 * dx1 - y_val, -D2 * dx2 - y_val)
+        dx1 = _bary_interp_1d(y_nodes, dphi1_dx_left, wy, y_val)
+        dx2 = _bary_interp_1d(y_nodes, dphi2_dx_left, wy, y_val)
+        R1 = -D1 * dx1 - y_val
+        R2 = -D2 * dx2 - y_val
+        bc_res[f"left(x=-0.5,y={y_val})"] = (R1, R2)
 
+    # Right BC: dphi_g/dx = 0 at x=+0.5
     for y_val in [-0.3, 0.0, 0.2, 0.4]:
-        x_val = 0.5
-        p1_0, p2_0 = interpolate_at(result, x_val, y_val)
-        p1_h, p2_h = interpolate_at(result, x_val - h, y_val)
-        p1_2h, p2_2h = interpolate_at(result, x_val - 2 * h, y_val)
-        dx1 = (3 * p1_0 - 4 * p1_h + p1_2h) / (2 * h)
-        dx2 = (3 * p2_0 - 4 * p2_h + p2_2h) / (2 * h)
-        bc_res[f"right(x={x_val},y={y_val})"] = (-D1 * dx1, -D2 * dx2)
+        dx1 = _bary_interp_1d(y_nodes, dphi1_dx_right, wy, y_val)
+        dx2 = _bary_interp_1d(y_nodes, dphi2_dx_right, wy, y_val)
+        R1 = -D1 * dx1
+        R2 = -D2 * dx2
+        bc_res[f"right(x=0.5,y={y_val})"] = (R1, R2)
 
+    # Top BC: dphi_g/dy = 0 at y=+0.5
     for x_val in [-0.3, 0.0, 0.2, 0.4]:
-        y_val = 0.5
-        p1_0, p2_0 = interpolate_at(result, x_val, y_val)
-        p1_h, p2_h = interpolate_at(result, x_val, y_val - h)
-        p1_2h, p2_2h = interpolate_at(result, x_val, y_val - 2 * h)
-        dy1 = (3 * p1_0 - 4 * p1_h + p1_2h) / (2 * h)
-        dy2 = (3 * p2_0 - 4 * p2_h + p2_2h) / (2 * h)
-        bc_res[f"top(x={x_val},y={y_val})"] = (-D1 * dy1, -D2 * dy2)
+        dy1 = _bary_interp_1d(x_nodes, dphi1_dy_top, wx, x_val)
+        dy2 = _bary_interp_1d(x_nodes, dphi2_dy_top, wx, x_val)
+        R1 = -D1 * dy1
+        R2 = -D2 * dy2
+        bc_res[f"top(x={x_val},y=0.5)"] = (R1, R2)
 
+    # Bottom BC: dphi_g/dy = 0 at y=-0.5
     for x_val in [-0.3, 0.0, 0.2, 0.4]:
-        y_val = -0.5
-        p1_0, p2_0 = interpolate_at(result, x_val, y_val)
-        p1_h, p2_h = interpolate_at(result, x_val, y_val + h)
-        p1_2h, p2_2h = interpolate_at(result, x_val, y_val + 2 * h)
-        dy1 = (-3 * p1_0 + 4 * p1_h - p1_2h) / (2 * h)
-        dy2 = (-3 * p2_0 + 4 * p2_h - p2_2h) / (2 * h)
-        bc_res[f"bottom(x={x_val},y={y_val})"] = (-D1 * dy1, -D2 * dy2)
+        dy1 = _bary_interp_1d(x_nodes, dphi1_dy_bot, wx, x_val)
+        dy2 = _bary_interp_1d(x_nodes, dphi2_dy_bot, wx, x_val)
+        R1 = -D1 * dy1
+        R2 = -D2 * dy2
+        bc_res[f"bottom(x={x_val},y=-0.5)"] = (R1, R2)
 
     return bc_res
 

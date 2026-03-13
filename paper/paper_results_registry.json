@@ -43,10 +43,9 @@
       "params": {"N": 30, "dof": 1800},
       "status": "complete",
       "results": {
-        "max_pde_residual": 3.64e-04,
-        "max_bc_residual": 8.00e-01,
-        "total_time_s": 0.075,
-        "note": "Large BC residual on left Neumann boundary — potential implementation issue"
+        "max_pde_residual": 7.23e-06,
+        "max_bc_residual": 6.04e-05,
+        "total_time_s": 0.079
       },
       "script": "baselines/spectral/spectral_solver.py",
       "timestamp": "2026-03-13"

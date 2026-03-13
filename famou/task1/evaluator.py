@@ -5,6 +5,8 @@ Evaluates a candidate numerical solver (init.py) by comparing its output
 against the analytical reference solution at test points, and checking
 PDE/BC residuals.
 
+The analytical reference is embedded directly in this file (no external deps).
+
 Interface (READONLY):
     evaluate(path_user_py, task_name="default", timeout=3600) -> dict
     {
@@ -36,55 +38,96 @@ A12 = -NU * SIGMA_F2              # -0.25
 A21 = -SIGMA_12                   # -0.015
 A22 = SIGMA_A2                    # 0.1
 
+# ── Coupling matrix M = D^{-1} * A (embedded analytical solver) ─────────────
+_M = np.array([
+    [A11 / D1, A12 / D1],
+    [A21 / D2, A22 / D2],
+])
+
+def _eigen_decomp():
+    evals, evecs = np.linalg.eig(_M)
+    idx = np.argsort(evals)
+    return evals[idx], evecs[:, idx]
+
+_EIGENVALUES, _P = _eigen_decomp()
+_P_INV = np.linalg.inv(_P)
+_LAMBDA1, _LAMBDA2 = _EIGENVALUES[0], _EIGENVALUES[1]
+
+
+def _cosine_coeff(n):
+    """b_n = 2 * integral_{-0.5}^{0.5} y * cos(n*pi*(y+0.5)) dy"""
+    if n == 0:
+        return 0.0
+    return 2.0 * ((-1.0)**n - 1.0) / (n * np.pi)**2
+
+
+def _compute_modes(N_terms=200):
+    D_vec = np.array([D1, D2])
+    modes = []
+    for n in range(N_terms + 1):
+        kn = n * np.pi
+        bn = _cosine_coeff(n)
+        if abs(bn) < 1e-30:
+            modes.append(None)
+            continue
+        alphas = np.zeros(2)
+        for p in range(2):
+            val = _EIGENVALUES[p] + kn**2
+            if val < 0:
+                raise ValueError(f"Negative sqrt arg: lambda_{p}={_EIGENVALUES[p]}, kn^2={kn**2}")
+            alphas[p] = np.sqrt(val)
+        Q = np.zeros((2, 2))
+        for g in range(2):
+            for p in range(2):
+                Q[g, p] = D_vec[g] * _P[g, p] * alphas[p] * np.sinh(alphas[p])
+        rhs = np.array([bn, bn])
+        c_n = np.linalg.solve(Q, rhs)
+        modes.append((alphas[0], alphas[1], c_n[0], c_n[1]))
+    return modes
+
+
+def _eval_flux(x_arr, y_arr, N_terms=200):
+    """Evaluate analytical flux at arrays of (x, y) points."""
+    x_arr = np.atleast_1d(np.asarray(x_arr, float))
+    y_arr = np.atleast_1d(np.asarray(y_arr, float))
+    modes = _compute_modes(N_terms)
+    phi1 = np.zeros_like(x_arr)
+    phi2 = np.zeros_like(x_arr)
+    for n, mode in enumerate(modes):
+        if mode is None:
+            continue
+        a1, a2, c1, c2 = mode
+        kn = n * np.pi
+        cos_y = np.cos(kn * (y_arr + 0.5))
+        X1 = np.cosh(a1 * (x_arr - 0.5))
+        X2 = np.cosh(a2 * (x_arr - 0.5))
+        phi1 += (c1 * _P[0, 0] * X1 + c2 * _P[0, 1] * X2) * cos_y
+        phi2 += (c1 * _P[1, 0] * X1 + c2 * _P[1, 1] * X2) * cos_y
+    return phi1, phi2
+
+
 # ── Test points ─────────────────────────────────────────────────────────────
 TEST_POINTS = [(0.0, 0.0), (0.2, 0.2), (-0.2, -0.3), (0.4, -0.4)]
 
-
-def _get_analytical_reference():
-    """Load analytical solution values (ground truth)."""
-    # Path relative to this evaluator file
-    eval_dir = os.path.dirname(os.path.abspath(__file__))
-    analytical_path = os.path.join(
-        eval_dir, "..", "..", "scripts", "numerical_solver", "analytical_solver.py"
-    )
-    analytical_path = os.path.normpath(analytical_path)
-
-    if not os.path.exists(analytical_path):
-        raise FileNotFoundError(f"Analytical solver not found: {analytical_path}")
-
-    spec = importlib.util.spec_from_file_location("analytical_solver", analytical_path)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-
-    ref = {}
-    xp = np.array([p[0] for p in TEST_POINTS])
-    yp = np.array([p[1] for p in TEST_POINTS])
-    p1_vals, p2_vals = mod.evaluate_flux(xp, yp, N_terms=200)
-    for i, pt in enumerate(TEST_POINTS):
-        ref[pt] = (float(p1_vals[i]), float(p2_vals[i]))
-    return ref, mod
-
-
-# Precompute reference once at module load (cached)
-_REF_CACHE = None
-_ANALYTICAL_MOD = None
-
+# Precompute reference values once at import time
+_REF = None
 
 def _get_ref():
-    global _REF_CACHE, _ANALYTICAL_MOD
-    if _REF_CACHE is None:
-        _REF_CACHE, _ANALYTICAL_MOD = _get_analytical_reference()
-    return _REF_CACHE, _ANALYTICAL_MOD
+    global _REF
+    if _REF is None:
+        xp = np.array([p[0] for p in TEST_POINTS])
+        yp = np.array([p[1] for p in TEST_POINTS])
+        p1, p2 = _eval_flux(xp, yp, N_terms=200)
+        _REF = {pt: (float(p1[i]), float(p2[i])) for i, pt in enumerate(TEST_POINTS)}
+    return _REF
 
 
-def _load_user_module(path_user_py: str):
-    """Dynamically load the candidate solution module."""
+def _load_user_module(path_user_py):
     abs_path = os.path.abspath(path_user_py)
     if not os.path.exists(abs_path):
         raise FileNotFoundError(f"Candidate file not found: {abs_path}")
     spec = importlib.util.spec_from_file_location("user_solution", abs_path)
     mod = importlib.util.module_from_spec(spec)
-    # Set sys.path so the user module can import local files
     user_dir = os.path.dirname(abs_path)
     if user_dir not in sys.path:
         sys.path.insert(0, user_dir)
@@ -92,176 +135,105 @@ def _load_user_module(path_user_py: str):
     return mod
 
 
-def _compute_pde_residual(phi1_func, phi2_func, x: float, y: float, h: float = 1e-5) -> tuple:
-    """Numerical PDE residual at (x, y) via central finite differences."""
-    p1_c = phi1_func(x, y)
-    p2_c = phi2_func(x, y)
-
-    p1_xp = phi1_func(x + h, y);  p1_xm = phi1_func(x - h, y)
-    p1_yp = phi1_func(x, y + h);  p1_ym = phi1_func(x, y - h)
-    p2_xp = phi2_func(x + h, y);  p2_xm = phi2_func(x - h, y)
-    p2_yp = phi2_func(x, y + h);  p2_ym = phi2_func(x, y - h)
-
-    lap1 = (p1_xp - 2*p1_c + p1_xm)/h**2 + (p1_yp - 2*p1_c + p1_ym)/h**2
-    lap2 = (p2_xp - 2*p2_c + p2_xm)/h**2 + (p2_yp - 2*p2_c + p2_ym)/h**2
-
-    R1 = -D1*lap1 + A11*p1_c + A12*p2_c
-    R2 = -D2*lap2 + A21*p1_c + A22*p2_c
-    return abs(R1), abs(R2)
+def _pde_residual(phi1_func, phi2_func, x, y, h=1e-5):
+    p1c = phi1_func(x, y);  p2c = phi2_func(x, y)
+    lap1 = ((phi1_func(x+h,y) - 2*p1c + phi1_func(x-h,y))/h**2
+            + (phi1_func(x,y+h) - 2*p1c + phi1_func(x,y-h))/h**2)
+    lap2 = ((phi2_func(x+h,y) - 2*p2c + phi2_func(x-h,y))/h**2
+            + (phi2_func(x,y+h) - 2*p2c + phi2_func(x,y-h))/h**2)
+    R1 = abs(-D1*lap1 + A11*p1c + A12*p2c)
+    R2 = abs(-D2*lap2 + A21*p1c + A22*p2c)
+    return R1, R2
 
 
-def _compute_bc_residual(phi1_func, phi2_func) -> float:
-    """Max BC residual across boundary sample points."""
+def _bc_residual(phi1_func, phi2_func):
     h = 1e-5
     max_res = 0.0
-
-    # Left boundary: -D_g * dphi_g/dx = y  at x=-0.5
-    for y_val in [-0.4, -0.2, 0.0, 0.2, 0.4]:
-        x0 = -0.5
-        dx1 = (phi1_func(x0+h, y_val) - phi1_func(x0-h, y_val)) / (2*h)
-        dx2 = (phi2_func(x0+h, y_val) - phi2_func(x0-h, y_val)) / (2*h)
-        max_res = max(max_res, abs(-D1*dx1 - y_val), abs(-D2*dx2 - y_val))
-
-    # Right boundary: dphi_g/dx = 0 at x=+0.5
-    for y_val in [-0.4, -0.2, 0.0, 0.2, 0.4]:
-        x0 = 0.5
-        dx1 = (phi1_func(x0+h, y_val) - phi1_func(x0-h, y_val)) / (2*h)
-        dx2 = (phi2_func(x0+h, y_val) - phi2_func(x0-h, y_val)) / (2*h)
+    for yv in [-0.4, -0.2, 0.0, 0.2, 0.4]:
+        dx1 = (phi1_func(-0.5+h, yv) - phi1_func(-0.5-h, yv)) / (2*h)
+        dx2 = (phi2_func(-0.5+h, yv) - phi2_func(-0.5-h, yv)) / (2*h)
+        max_res = max(max_res, abs(-D1*dx1 - yv), abs(-D2*dx2 - yv))
+    for yv in [-0.4, -0.2, 0.0, 0.2, 0.4]:
+        dx1 = (phi1_func(0.5+h, yv) - phi1_func(0.5-h, yv)) / (2*h)
+        dx2 = (phi2_func(0.5+h, yv) - phi2_func(0.5-h, yv)) / (2*h)
         max_res = max(max_res, abs(-D1*dx1), abs(-D2*dx2))
-
-    # Top boundary: dphi_g/dy = 0 at y=+0.5
-    for x_val in [-0.4, -0.2, 0.0, 0.2, 0.4]:
-        y0 = 0.5
-        dy1 = (phi1_func(x_val, y0+h) - phi1_func(x_val, y0-h)) / (2*h)
-        dy2 = (phi2_func(x_val, y0+h) - phi2_func(x_val, y0-h)) / (2*h)
+    for xv in [-0.4, -0.2, 0.0, 0.2, 0.4]:
+        dy1 = (phi1_func(xv, 0.5+h) - phi1_func(xv, 0.5-h)) / (2*h)
+        dy2 = (phi2_func(xv, 0.5+h) - phi2_func(xv, 0.5-h)) / (2*h)
         max_res = max(max_res, abs(-D1*dy1), abs(-D2*dy2))
-
-    # Bottom boundary: dphi_g/dy = 0 at y=-0.5
-    for x_val in [-0.4, -0.2, 0.0, 0.2, 0.4]:
-        y0 = -0.5
-        dy1 = (phi1_func(x_val, y0+h) - phi1_func(x_val, y0-h)) / (2*h)
-        dy2 = (phi2_func(x_val, y0+h) - phi2_func(x_val, y0-h)) / (2*h)
+    for xv in [-0.4, -0.2, 0.0, 0.2, 0.4]:
+        dy1 = (phi1_func(xv, -0.5+h) - phi1_func(xv, -0.5-h)) / (2*h)
+        dy2 = (phi2_func(xv, -0.5+h) - phi2_func(xv, -0.5-h)) / (2*h)
         max_res = max(max_res, abs(-D1*dy1), abs(-D2*dy2))
-
     return max_res
 
 
 def evaluate(path_user_py: str, task_name: str = "default", timeout: int = 3600) -> dict:
-    """Evaluate a candidate neutron diffusion solver.
-
-    Args:
-        path_user_py: path to the candidate init.py
-        task_name: experiment identifier (unused internally)
-        timeout: max seconds (not enforced here; caller may wrap)
-
-    Returns:
-        dict with validity, combined_score, cost_time, error_info
-    """
     t_start = time.time()
 
-    # ── Step 1: Load candidate module ───────────────────────────────────────
     try:
         user_mod = _load_user_module(path_user_py)
     except Exception as e:
-        return {
-            "validity": 0.0,
-            "combined_score": 0.0,
-            "cost_time": time.time() - t_start,
-            "error_info": f"Module load failed: {e}\n{traceback.format_exc()}",
-        }
+        return {"validity": 0.0, "combined_score": 0.0,
+                "cost_time": time.time()-t_start,
+                "error_info": f"Module load failed: {e}\n{traceback.format_exc()}"}
 
-    # ── Step 2: Call solution() ─────────────────────────────────────────────
     try:
         if not hasattr(user_mod, "solution"):
-            raise AttributeError("solution() function not found in candidate script")
+            raise AttributeError("solution() not found")
         phi1_func, phi2_func = user_mod.solution()
         if not callable(phi1_func) or not callable(phi2_func):
-            raise TypeError("solution() must return two callables (phi1_func, phi2_func)")
+            raise TypeError("solution() must return two callables")
     except Exception as e:
-        return {
-            "validity": 0.0,
-            "combined_score": 0.0,
-            "cost_time": time.time() - t_start,
-            "error_info": f"solution() failed: {e}\n{traceback.format_exc()}",
-        }
+        return {"validity": 0.0, "combined_score": 0.0,
+                "cost_time": time.time()-t_start,
+                "error_info": f"solution() failed: {e}\n{traceback.format_exc()}"}
 
-    # ── Step 3: Evaluate at test points ────────────────────────────────────
     try:
-        ref, _ = _get_ref()
+        ref = _get_ref()
         rel_errors = []
         for pt in TEST_POINTS:
             x, y = pt
-            p1_pred = float(phi1_func(x, y))
-            p2_pred = float(phi2_func(x, y))
-
-            if not (np.isfinite(p1_pred) and np.isfinite(p2_pred)):
-                return {
-                    "validity": 0.0,
-                    "combined_score": 0.0,
-                    "cost_time": time.time() - t_start,
-                    "error_info": f"Non-finite value at ({x},{y}): phi1={p1_pred}, phi2={p2_pred}",
-                }
-
-            p1_ref, p2_ref = ref[pt]
-            # Relative error (avoid division by near-zero)
-            denom1 = max(abs(p1_ref), 1e-10)
-            denom2 = max(abs(p2_ref), 1e-10)
-            rel_errors.append(abs(p1_pred - p1_ref) / denom1)
-            rel_errors.append(abs(p2_pred - p2_ref) / denom2)
-
-        mean_rel_error = float(np.mean(rel_errors))
-        max_rel_error = float(np.max(rel_errors))
-
+            p1 = float(phi1_func(x, y))
+            p2 = float(phi2_func(x, y))
+            if not (np.isfinite(p1) and np.isfinite(p2)):
+                return {"validity": 0.0, "combined_score": 0.0,
+                        "cost_time": time.time()-t_start,
+                        "error_info": f"Non-finite at ({x},{y}): phi1={p1}, phi2={p2}"}
+            p1r, p2r = ref[pt]
+            rel_errors.append(abs(p1-p1r) / max(abs(p1r), 1e-10))
+            rel_errors.append(abs(p2-p2r) / max(abs(p2r), 1e-10))
+        mean_rel_err = float(np.mean(rel_errors))
+        max_rel_err  = float(np.max(rel_errors))
     except Exception as e:
-        return {
-            "validity": 0.0,
-            "combined_score": 0.0,
-            "cost_time": time.time() - t_start,
-            "error_info": f"Evaluation at test points failed: {e}\n{traceback.format_exc()}",
-        }
+        return {"validity": 0.0, "combined_score": 0.0,
+                "cost_time": time.time()-t_start,
+                "error_info": f"Test-point eval failed: {e}\n{traceback.format_exc()}"}
 
-    # ── Step 4: PDE residuals ────────────────────────────────────────────────
     try:
-        pde_residuals = []
+        pde_res = []
         for pt in TEST_POINTS:
-            r1, r2 = _compute_pde_residual(phi1_func, phi2_func, pt[0], pt[1])
-            pde_residuals.extend([r1, r2])
-        max_pde_res = float(np.max(pde_residuals))
-        mean_pde_res = float(np.mean(pde_residuals))
-    except Exception as e:
-        max_pde_res = 1e10
-        mean_pde_res = 1e10
+            r1, r2 = _pde_residual(phi1_func, phi2_func, pt[0], pt[1])
+            pde_res.extend([r1, r2])
+        max_pde = float(np.max(pde_res))
+    except Exception:
+        max_pde = 1e10
 
-    # ── Step 5: BC residuals ────────────────────────────────────────────────
     try:
-        max_bc_res = _compute_bc_residual(phi1_func, phi2_func)
-    except Exception as e:
-        max_bc_res = 1e10
+        max_bc = _bc_residual(phi1_func, phi2_func)
+    except Exception:
+        max_bc = 1e10
 
-    # ── Step 6: Scoring ─────────────────────────────────────────────────────
-    # Primary score: accuracy vs analytical solution
-    accuracy_score = 1.0 / (1.0 + mean_rel_error * 100)
-
-    # PDE penalty: heavy penalty for large PDE residuals
-    if max_pde_res < 1e-6:
-        pde_factor = 1.0
-    elif max_pde_res < 1e-4:
-        pde_factor = 0.9
-    elif max_pde_res < 1e-2:
-        pde_factor = 0.7
-    else:
-        pde_factor = max(0.1, 1.0 / (1.0 + max_pde_res))
-
-    # BC penalty
-    if max_bc_res < 1e-6:
-        bc_factor = 1.0
-    elif max_bc_res < 1e-4:
-        bc_factor = 0.9
-    elif max_bc_res < 1e-2:
-        bc_factor = 0.7
-    else:
-        bc_factor = max(0.1, 1.0 / (1.0 + max_bc_res))
-
+    # Scoring
+    accuracy_score = 1.0 / (1.0 + mean_rel_err * 100)
+    pde_factor = (1.0 if max_pde < 1e-6 else
+                  0.9 if max_pde < 1e-4 else
+                  0.7 if max_pde < 1e-2 else
+                  max(0.1, 1.0/(1.0+max_pde)))
+    bc_factor  = (1.0 if max_bc  < 1e-6 else
+                  0.9 if max_bc  < 1e-4 else
+                  0.7 if max_bc  < 1e-2 else
+                  max(0.1, 1.0/(1.0+max_bc)))
     combined_score = accuracy_score * pde_factor * bc_factor
 
     return {
@@ -269,11 +241,10 @@ def evaluate(path_user_py: str, task_name: str = "default", timeout: int = 3600)
         "combined_score": float(combined_score),
         "cost_time": time.time() - t_start,
         "error_info": "",
-        # Extra diagnostics (optional, ignored by famou-ctl)
-        "mean_rel_error": mean_rel_error,
-        "max_rel_error": max_rel_error,
-        "max_pde_residual": max_pde_res,
-        "max_bc_residual": max_bc_res,
+        "mean_rel_error": mean_rel_err,
+        "max_rel_error":  max_rel_err,
+        "max_pde_residual": max_pde,
+        "max_bc_residual":  max_bc,
     }
 
 
@@ -282,5 +253,4 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python evaluator.py <path_to_init.py>")
         sys.exit(1)
-    result = evaluate(sys.argv[1])
-    print(json.dumps(result, indent=2))
+    print(json.dumps(evaluate(sys.argv[1]), indent=2))

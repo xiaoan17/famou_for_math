@@ -140,7 +140,7 @@ The principal contributions of this work are:
 
 \subsection{Paper Organization}
 
-The remainder of this paper is organized as follows. Section~\ref{sec:formulation} states the two-group diffusion boundary value problem precisely, introduces the matrix formulation, and characterizes the coupling matrix. Section~\ref{sec:analytical} presents the analytical solution method in full detail, proceeding through Fourier--cosine expansion, eigendecomposition decoupling, hyperbolic ODE solutions, coefficient matching, and convergence analysis. Section~\ref{sec:numerical} describes the four numerical comparison methods and their implementation details. Section~\ref{sec:experiments} reports experimental results including PDE and boundary condition residual comparisons, convergence studies, flux field visualizations, and accuracy--efficiency tradeoffs. Section~\ref{sec:related} surveys related work in analytical methods, classical numerics, and neural PDE solvers. Section~\ref{sec:conclusion} concludes with a discussion of significance and future directions.
+The remainder of this paper is organized as follows. Section~\ref{sec:formulation} states the two-group diffusion boundary value problem precisely, introduces the matrix formulation, and characterizes the coupling matrix. Section~\ref{sec:analytical} presents the analytical solution method in full detail, proceeding through Fourier--cosine expansion, eigendecomposition decoupling, hyperbolic ODE solutions, coefficient matching, and convergence analysis. Section~\ref{sec:numerical} describes the four numerical comparison methods and their implementation details. Section~\ref{sec:experiments} reports experimental results including PDE and boundary condition residual comparisons, convergence studies, flux field visualizations, and accuracy--efficiency tradeoffs. Section~\ref{sec:famou} presents the Famou AI-driven solver evolution experiment using the analytical solution as an oracle evaluator. Section~\ref{sec:related} surveys related work in analytical methods, classical numerics, and neural PDE solvers. Section~\ref{sec:conclusion} concludes with a discussion of significance, limitations, and future directions.
 
 % ============================================================================
 % 2. PROBLEM FORMULATION
@@ -908,7 +908,7 @@ The analytical solution derived in this work eliminates both problems. Its resid
 We argue that the development of exact benchmarks should accompany the development of increasingly sophisticated neural PDE solvers. The Fourier--eigendecomposition technique demonstrated here can be extended to other coupled elliptic systems with compatible boundary conditions, providing a family of exact benchmarks spanning different problem complexities, coupling strengths, and spatial dimensions.
 
 % ============================================================================
-% 7. CONCLUSION
+% 8. CONCLUSION
 % ============================================================================
 \section{Conclusion}\label{sec:conclusion}
 
@@ -917,6 +917,22 @@ We have derived the first closed-form analytical solution for the two-dimensiona
 Benchmarking against four numerical and data-driven solvers demonstrates the value of an exact reference. The analytical solution achieves PDE residuals at the level of machine epsilon ($\num{2.81e-16}$), outperforming the best numerical method (FEM, $\num{9.20e-7}$) by 10 orders of magnitude and the PINN ($\num{9.54e-3}$) by 13 orders. The FDM convergence study confirms the expected $O(h^2)$ rate, independently validating both the FDM implementation and the analytical reference. The accuracy--efficiency comparison reveals that the analytical solver is not only the most accurate but also the fastest, requiring \num{0.017}\,s compared to \num{98.6}\,s for the PINN.
 
 The analytical solution serves three roles going forward. First, as a \textbf{verification benchmark}: it provides an unambiguous ground truth for testing numerical PDE solvers, with residuals bounded by machine epsilon rather than discretization error. Second, as a \textbf{training reference}: neural PDE solvers that incorporate supervised loss terms can use the analytical solution to generate arbitrarily large and precise training datasets at arbitrary spatial resolution. Third, as a \textbf{methodological template}: the Fourier--eigendecomposition technique demonstrated here is not specific to neutron diffusion and can be applied to any coupled elliptic PDE system on rectangular domains where at least one pair of opposing boundaries admits a Fourier eigenfunction expansion.
+
+\subsection{Limitations}\label{sec:limitations}
+
+The analytical method developed in this work has several structural limitations that define the scope of its applicability:
+
+\begin{enumerate}[leftmargin=2em, itemsep=3pt]
+\item \textbf{Rectangular geometry}: The Fourier--cosine expansion requires two opposing boundaries with homogeneous Neumann conditions. The method does not extend directly to L-shaped domains, cylindrical geometries, or domains with curved boundaries.
+
+\item \textbf{Homogeneous medium}: The diffusion coefficients $D_g$ and cross-sections $\Sigma$ must be spatially uniform throughout the domain. Heterogeneous media (fuel assemblies, control rods) require different techniques such as interface-matching conditions or nodal decomposition.
+
+\item \textbf{BC structure}: The method requires at least two opposing faces with homogeneous Neumann or homogeneous Dirichlet conditions to serve as the Fourier expansion direction. Arbitrary mixed BCs on all four faces cannot be handled without additional particular-solution construction.
+
+\item \textbf{Fixed-source problem}: The formulation treats the system as a fixed-source problem (given boundary current drives the solution). Extension to the $k$-eigenvalue (criticality) problem would require iteration over the fission source term.
+
+\item \textbf{Two-group truncation}: While the eigendecomposition principle generalizes to $G$ groups (yielding a $G\times G$ eigendecomposition problem), computational cost and numerical stability may degrade for large $G$ due to the increasing condition number of the coefficient matrix $\mat{Q}_n$.
+\end{enumerate}
 
 \paragraph{Future work.}
 Three extensions merit investigation. First, the technique can be generalized to \textbf{heterogeneous media} (piecewise-constant cross-sections) by treating material interfaces as internal boundaries with continuity conditions for both flux and current. The Fourier expansion in $y$ remains valid, but the $x$-direction solution involves matching conditions at each interface, expanding the algebraic system. Second, extension to \textbf{three spatial dimensions} is straightforward: the $z$-direction admits another Fourier expansion (cosine for Neumann, sine for Dirichlet), producing a doubly indexed family of 1D ODEs that are decoupled by the same eigenvector matrix $\mat{P}$. The computational cost grows as $O(N_y \cdot N_z)$ but remains polynomial. Third, the \textbf{eigenvalue (criticality) problem}, where the fission source is scaled by $1/k_{\text{eff}}$, can be addressed by parametrizing the analytical solution over $k_{\text{eff}}$ and applying a bisection or Newton search to find the value that satisfies the criticality condition (non-trivial solution with finite norm).

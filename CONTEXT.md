@@ -51,6 +51,13 @@
 ## Research Background
 (To be filled by Background Researcher)
 
+## GitHub Repository
+- **Remote**: `git@github.com:xiaoan17/famou_for_math.git`
+- **Branch**: `main`
+- **Scope**: ONLY push contents of `/Users/anbc/baidu_工作文件/agent_for_science/phase_2/working/paper_work_20260313/`
+- **Push command**: `git push -u origin main` (from inside the working dir)
+- **Initial commit done**: ✅ 4caad5c
+
 ## conda environment
 - `base` environment (default), Python 3.x
 - Dependencies: numpy, scipy, matplotlib available

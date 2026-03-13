@@ -1,0 +1,49 @@
+{
+  "project": "2D Two-Group Neutron Diffusion",
+  "created": "2026-03-13",
+  "experiments": {
+    "exp-001": {
+      "method": "Analytical (Fourier-Cosine Eigendecomposition)",
+      "params": {"N_terms": 500},
+      "status": "pending",
+      "results": null,
+      "script": "scripts/numerical_solver/analytical_solver.py",
+      "timestamp": null
+    },
+    "exp-002": {
+      "method": "FDM (Finite Difference Method)",
+      "params": {"grid": "101x101", "dof": 10201},
+      "status": "pending",
+      "results": null,
+      "script": "baselines/fdm/fdm_solver.py",
+      "timestamp": null
+    },
+    "exp-003": {
+      "method": "FEM (Finite Element Method)",
+      "params": {"grid": "101x101", "dof_approx": 20000},
+      "status": "pending",
+      "results": null,
+      "script": "baselines/fem/fem_solver.py",
+      "timestamp": null
+    },
+    "exp-004": {
+      "method": "Spectral (Chebyshev Collocation)",
+      "params": {"N": 30, "dof": 900},
+      "status": "pending",
+      "results": null,
+      "script": "baselines/spectral/spectral_solver.py",
+      "timestamp": null
+    },
+    "exp-005": {
+      "method": "PINN (Physics-Informed Neural Network)",
+      "params": {"layers": 3, "neurons": 64, "optimizer": "Adam"},
+      "status": "pending",
+      "results": null,
+      "script": "baselines/pinn/pinn_solver.py",
+      "timestamp": null
+    }
+  },
+  "comparison_table": null,
+  "figures": [],
+  "paper_status": "not_started"
+}

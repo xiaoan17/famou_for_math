@@ -1,0 +1,44 @@
+[
+  {
+    "N_terms": 5,
+    "max_pde_residual": 1.2091650573968493e-06,
+    "max_bc_residual": 0.00672577530311233,
+    "wall_time": 0.11211705207824707
+  },
+  {
+    "N_terms": 10,
+    "max_pde_residual": 1.4870870409210146e-06,
+    "max_bc_residual": 0.006419403839503013,
+    "wall_time": 0.17852210998535156
+  },
+  {
+    "N_terms": 25,
+    "max_pde_residual": 1.6233533767610886e-06,
+    "max_bc_residual": 0.0008742115207790446,
+    "wall_time": 0.4530341625213623
+  },
+  {
+    "N_terms": 50,
+    "max_pde_residual": 1.762131253114918e-06,
+    "max_bc_residual": 0.00047848816759377133,
+    "wall_time": 0.892160177230835
+  },
+  {
+    "N_terms": 100,
+    "max_pde_residual": 1.762131253114918e-06,
+    "max_bc_residual": 1.563913765745273e-05,
+    "wall_time": 1.6927220821380615
+  },
+  {
+    "N_terms": 200,
+    "max_pde_residual": 1.822323604874082e-06,
+    "max_bc_residual": 2.020452799178507e-06,
+    "wall_time": 3.449126958847046
+  },
+  {
+    "N_terms": 500,
+    "max_pde_residual": 0.0,
+    "max_bc_residual": 0.0,
+    "wall_time": 9.052522897720337
+  }
+]

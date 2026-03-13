@@ -8,7 +8,7 @@
 | exp-002 | FDM 101×101 | 9.07e-05 | 3.97e-04 | 0.134 | 10201 DOF | **complete** |
 | exp-003 | FEM 101×101 (Q1) | 9.20e-07 | 4.05e-04 | 0.824 | 20402 DOF | **complete** |
 | exp-004 | Spectral N=30 | 7.23e-06 | 6.04e-05 | 0.079 | 1800 DOF | **complete** |
-| exp-005 | PINN | TBD | TBD | TBD | 3×64 MLP | pending |
+| exp-005 | PINN 3×64 MLP | 9.54e-03 | 9.13e-03 | 98.6 | 8642 params | **complete** |
 
 ## Experiment Details
 
@@ -50,3 +50,5 @@
 - 2026-03-13: exp-003 (FEM Q1 101x101) complete — max PDE res 9.20e-07, max BC res 4.05e-04, 0.824s
 - 2026-03-13: exp-004 (Spectral N=30) complete — max PDE res 3.64e-04, max BC res 8.00e-01 (left BC issue), 0.075s
 - 2026-03-13: exp-004 (Spectral N=30) UPDATED — BC fix applied, max PDE res 7.23e-06, max BC res 6.04e-05, 0.079s
+- 2026-03-13: exp-005 (PINN 3x64) complete — max PDE res 9.54e-03, max BC res 9.13e-03, 98.6s
+- 2026-03-13: ALL EXPERIMENTS COMPLETE

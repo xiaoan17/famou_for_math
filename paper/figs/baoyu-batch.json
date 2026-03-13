@@ -1,0 +1,32 @@
+{
+  "jobs": 3,
+  "tasks": [
+    {
+      "id": "fig-framework-pipeline",
+      "promptFiles": ["baoyu-prompts/01-framework-solution-pipeline.md"],
+      "image": "fig-framework-pipeline.png",
+      "provider": "google",
+      "model": "gemini-3-pro-image-preview",
+      "ar": "16:9",
+      "quality": "2k"
+    },
+    {
+      "id": "fig-problem-domain",
+      "promptFiles": ["baoyu-prompts/02-infographic-problem-domain.md"],
+      "image": "fig-problem-domain.png",
+      "provider": "google",
+      "model": "gemini-3-pro-image-preview",
+      "ar": "1:1",
+      "quality": "2k"
+    },
+    {
+      "id": "fig-comparison-accuracy-cost",
+      "promptFiles": ["baoyu-prompts/03-comparison-accuracy-cost.md"],
+      "image": "fig-comparison-accuracy-cost.png",
+      "provider": "google",
+      "model": "gemini-3-pro-image-preview",
+      "ar": "16:9",
+      "quality": "2k"
+    }
+  ]
+}

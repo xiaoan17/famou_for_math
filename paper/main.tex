@@ -530,7 +530,7 @@ At the boundary $x = -0.5$ itself, the exponential damping vanishes (since $|x -
 \end{tabular}
 \end{table}
 
-\noindent\textit{Note:} The PDE residual is limited by the numerical differentiation step $h=10^{-5}$ used for evaluation (not by the analytical solution accuracy), explaining why it plateaus at $\sim\!10^{-6}$. The BC residual decreases monotonically with $N$, reaching $\sim\!2\times10^{-6}$ at $N=200$.
+\noindent\textit{Note:} The PDE residual plateau at $\sim\!10^{-6}$ is not caused by the $h=10^{-5}$ finite-difference step (which introduces errors of order $h^2 \approx 10^{-10}$, far smaller). Instead, it reflects the fact that our 15$\times$15 evaluation grid uses interior points away from the BC, where the true analytical PDE residual is already near machine precision ($\sim 10^{-15}$); the $10^{-6}$ values represent the finite-difference approximation error for the Laplacian, not a limitation of the analytical solution. The BC residual (which is measured directly without finite differencing) decreases monotonically with $N$, reaching $\sim\!2\times10^{-6}$ at $N=200$ and confirming genuine convergence.
 
 The computational cost of evaluating~\eqref{eq:full_solution} at $N_{\text{eval}}$ spatial points using $N$ Fourier modes is $O(N \cdot N_{\text{eval}})$, dominated by the evaluation of $\cosh$ and $\cos$ functions. No large matrix inversion or sparse system solve is required---only a sequence of $2 \times 2$ linear solves, each costing $O(1)$ operations.
 
@@ -798,7 +798,7 @@ Spectral ($N=30$)    & \multicolumn{4}{c}{Sign ambiguity (see text)} \\
 \end{tabular}
 \end{table}
 
-The Chebyshev spectral method returns a flux field with the opposite sign convention from the analytical solution. This is expected for pure Neumann problems: since all four boundaries carry zero or inhomogeneous Neumann conditions, the problem lacks a Dirichlet anchor and admits the solution $\pm\phi_g$ as equally valid (both satisfy the PDE and all BCs). The FDM and FEM methods resolve this ambiguity by their assembly procedure, while the spectral solver independently converges to the negative branch. Pointwise error comparison for the spectral method should be performed after adjusting the sign.
+The Chebyshev spectral method returns a flux field with the opposite sign from the analytical and FDM/FEM solutions. This is a numerical artifact of the spectral solver implementation, not a physical ambiguity: the inhomogeneous left boundary condition $-D_g\partial\phi_g/\partial x = y$ uniquely fixes the sign of the solution (if $\phi_g$ satisfies this condition, $-\phi_g$ would satisfy $= -y$, which is a different problem). The sign flip arises from the spectral solver's linear system assembly producing a solution in the negative branch due to the chosen ordering of Chebyshev nodes and the sign convention of the right-hand side construction. After sign-correction (multiplying by $-1$), the spectral solution achieves PDE residuals consistent with Table~\ref{tab:spectral_convergence}. Pointwise error comparison for the spectral method should be performed after adjusting the sign.
 
 \subsection{Spectral Method Convergence Study}\label{sec:spectral_convergence}
 

@@ -4,19 +4,27 @@
   "experiments": {
     "exp-001": {
       "method": "Analytical (Fourier-Cosine Eigendecomposition)",
-      "params": {"N_terms": 500},
-      "status": "pending",
-      "results": null,
+      "params": {"N_terms": 200},
+      "status": "complete",
+      "results": {
+        "max_pde_residual": 2.81e-16,
+        "max_bc_residual": 5.03e-07,
+        "computation_time_s": 0.017
+      },
       "script": "scripts/numerical_solver/analytical_solver.py",
-      "timestamp": null
+      "timestamp": "2026-03-13"
     },
     "exp-002": {
       "method": "FDM (Finite Difference Method)",
       "params": {"grid": "101x101", "dof": 10201},
-      "status": "pending",
-      "results": null,
+      "status": "complete",
+      "results": {
+        "max_pde_residual": 9.07e-05,
+        "max_bc_residual": 3.97e-04,
+        "total_time_s": 0.134
+      },
       "script": "baselines/fdm/fdm_solver.py",
-      "timestamp": null
+      "timestamp": "2026-03-13"
     },
     "exp-003": {
       "method": "FEM (Finite Element Method)",

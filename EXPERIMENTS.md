@@ -4,8 +4,8 @@
 
 | Exp ID | Method | Max PDE Residual | Max BC Residual | Time (s) | Grid/Params | Status |
 |--------|--------|-----------------|-----------------|----------|-------------|--------|
-| exp-001 | Analytical (N=500) | TBD | TBD | TBD | 500 Fourier modes | pending |
-| exp-002 | FDM 101×101 | TBD | TBD | TBD | 10201 DOF | pending |
+| exp-001 | Analytical (N=200) | 2.81e-16 | 5.03e-07 | 0.017 | 200 Fourier modes | **complete** |
+| exp-002 | FDM 101×101 | 9.07e-05 | 3.97e-04 | 0.134 | 10201 DOF | **complete** |
 | exp-003 | FEM 101×101 | TBD | TBD | TBD | ~20000 DOF | pending |
 | exp-004 | Spectral N=30 | TBD | TBD | TBD | 900 DOF | pending |
 | exp-005 | PINN | TBD | TBD | TBD | 3×64 MLP | pending |
@@ -45,3 +45,5 @@
 ## Update Log
 
 - 2026-03-13: Initial experiment plan created
+- 2026-03-13: exp-001 (Analytical N=200) complete — max PDE res 2.81e-16, max BC res 5.03e-07, 0.017s
+- 2026-03-13: exp-002 (FDM 101x101) complete — max PDE res 9.07e-05, max BC res 3.97e-04, 0.134s

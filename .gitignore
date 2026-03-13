@@ -1,0 +1,33 @@
+# Large data files
+*.pt
+*.pth
+*.h5
+*.ckpt
+*.pkl
+*.npy
+*.npz
+*.csv
+*.xlsx
+
+# Runtime artifacts
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+logs/
+outputs/
+famou_data/*/logs/
+*.egg-info/
+.env
+.DS_Store
+
+# Large images (keep key paper figs)
+# *.png
+# *.jpg
+
+# But keep key experiment outputs
+!baselines/**/results.json
+!baselines/**/convergence_results.json
+!scripts/**/*.py
+!paper/**/*.tex
+!paper/**/*.bib
+!paper/**/*.pdf

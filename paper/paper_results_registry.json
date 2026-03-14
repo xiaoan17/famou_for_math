@@ -1,0 +1,76 @@
+{
+  "_description": "论文数字到实验ID的映射 - 防错位机制",
+  "_version": "1.0",
+  "_last_updated": "2026-03-14",
+  "project": "Analytical Solution Helmholtz",
+  "task_id": "helmholtz",
+  "mappings": {
+    "table1": {
+      "description": "Baseline 方法对比表",
+      "paper_location": "Section 4.1, Table 1",
+      "experiments": {},
+      "status": "pending"
+    },
+    "table2": {
+      "description": "Famou 演化各轮次结果",
+      "paper_location": "Section 4.2, Table 2",
+      "experiments": {},
+      "status": "pending"
+    },
+    "table3": {
+      "description": "消融实验结果",
+      "paper_location": "Section 4.3, Table 3",
+      "experiments": {},
+      "status": "pending"
+    },
+    "figure1": {
+      "description": "问题示意图 / 几何区域",
+      "paper_location": "Section 3, Figure 1",
+      "source": "scripts/analysis/plot_geometry.py",
+      "data": null,
+      "status": "pending"
+    },
+    "figure2": {
+      "description": "Baseline 对比图",
+      "paper_location": "Section 4.1, Figure 2",
+      "source": "scripts/analysis/plot_baselines.py",
+      "data": "baselines/results/comparison.json",
+      "status": "pending"
+    },
+    "figure3": {
+      "description": "Famou 演化曲线",
+      "paper_location": "Section 4.2, Figure 3",
+      "source": "scripts/analysis/plot_evolution.py",
+      "data": "famou/task-helmholtz/evolution_log.json",
+      "status": "pending"
+    },
+    "figure4": {
+      "description": "解的可视化 (热图)",
+      "paper_location": "Section 4.2, Figure 4",
+      "source": "scripts/analysis/plot_solution.py",
+      "data": "famou/task-helmholtz/results.json",
+      "status": "pending"
+    },
+    "figure5": {
+      "description": "消融实验对比",
+      "paper_location": "Section 4.3, Figure 5",
+      "source": "scripts/analysis/plot_ablation.py",
+      "data": "ablations/results.json",
+      "status": "pending"
+    }
+  },
+  "validation_rules": {
+    "before_paper_submit": [
+      "所有 table* 必须有对应的 experiment_id",
+      "所有 figure* 必须有对应的 data 文件存在",
+      "所有 source 脚本必须可运行并生成相同结果"
+    ]
+  },
+  "update_history": [
+    {
+      "date": "2026-03-14",
+      "action": "初始化防错位机制",
+      "by": "Git & Doc Manager"
+    }
+  ]
+}

@@ -1,0 +1,136 @@
+# ============================================================================
+# Git Ignore for AI4S Paper Project
+# Project: 二维有限均匀介质边界源双群中子扩散方程解析解
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# Large Data Files
+# ----------------------------------------------------------------------------
+*.pt
+*.pth
+*.h5
+*.hdf5
+*.ckpt
+*.pkl
+*.pickle
+*.npy
+*.npz
+*.csv
+*.xlsx
+*.xls
+*.parquet
+*.feather
+*.arrow
+
+# ----------------------------------------------------------------------------
+# Model Checkpoints & Binary Data
+# ----------------------------------------------------------------------------
+checkpoints/
+*.safetensors
+*.onnx
+*.trt
+*.engine
+
+# ----------------------------------------------------------------------------
+# Runtime Artifacts
+# ----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.ipynb_checkpoints/
+*.ipynb
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+.venv/
+venv/
+ENV/
+env/
+
+# ----------------------------------------------------------------------------
+# Logs & Outputs
+# ----------------------------------------------------------------------------
+logs/
+outputs/
+runs/
+wandb/
+mlruns/
+famou_data/*/logs/
+*.log
+*.out
+*.err
+
+# ----------------------------------------------------------------------------
+# IDE & Editor
+# ----------------------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ----------------------------------------------------------------------------
+# Environment & Secrets
+# ----------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.secret
+*.token
+*.key
+*.pem
+
+# ----------------------------------------------------------------------------
+# Temporary Files
+# ----------------------------------------------------------------------------
+temp/
+tmp/
+*.tmp
+*.bak
+
+# ----------------------------------------------------------------------------
+# LaTeX Build Files
+# ----------------------------------------------------------------------------
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+*.out
+
+# ----------------------------------------------------------------------------
+# EXCEPTIONS - Keep Important Files
+# ----------------------------------------------------------------------------
+
+# Keep best program snapshots
+!experiments/**/best_program.py
+!experiments/**/iter-*.py
+
+# Keep experiment results and logs
+!experiments/**/results.json
+!experiments/**/evolution_log.json
+!experiments/**/summary.md
+
+# Keep evaluation scripts
+!**/evaluator.py
+!**/evaluator_gpu.py
+
+# Keep configuration files
+!**/config.yaml
+!**/run.sh
+
+# Keep documentation
+!EXPERIMENTS.md
+!PROGRESS.md
+!README.md
+!CONTEXT.md

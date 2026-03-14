@@ -1,0 +1,42 @@
+[
+  {
+    "validity": 1.0,
+    "combined_score": 0.9185607463185625,
+    "cost_time": 1.8467199802398682,
+    "error_info": "",
+    "method": "FDM (2nd-order, N=200)",
+    "note": "FDM self-evaluation score is 0.99998, but unified evaluator penalizes it to 0.9186 because cubic spline interpolation introduces artifacts in 2nd-derivative computation at h=1e-6 scale. The FDM grid solution itself is accurate (O(h^2)), but the pointwise evaluation interface required by the evaluator degrades its score."
+  },
+  {
+    "validity": 1.0,
+    "combined_score": 0.9185781990627686,
+    "cost_time": 9.507021188735962,
+    "error_info": "",
+    "method": "High-order FDM (4th-order, N=200)",
+    "note": "Same spline interpolation penalty as 2nd-order FDM. Despite 4th-order accuracy on the grid (self-eval 0.99999), the evaluator's pointwise h=1e-6 finite differences on the spline surface yield nearly identical score to 2nd-order FDM."
+  },
+  {
+    "validity": 1.0,
+    "combined_score": 0.9935505424338371,
+    "cost_time": 0.023618221282958984,
+    "error_info": "",
+    "method": "Truncated Analytical (K=5)",
+    "note": "Truncation to 5 Fourier modes introduces BC residual errors at high spatial frequencies. Score limited by Gibbs-like truncation artifacts."
+  },
+  {
+    "validity": 1.0,
+    "combined_score": 0.9586856451419834,
+    "cost_time": 7.098907232284546,
+    "error_info": "",
+    "method": "PINN (numpy)",
+    "note": "Pure numpy MLP without autograd. Limited by numerical gradient accuracy and small network capacity. PyTorch-based PINN with autograd would likely score significantly higher."
+  },
+  {
+    "validity": 1.0,
+    "combined_score": 0.9988939458957945,
+    "cost_time": 0.07237386703491211,
+    "error_info": "",
+    "method": "Fourier Analytical (N=30)",
+    "note": "Our analytical solution with 30 Fourier modes. Highest score among all methods. Demonstrates that analytical approaches maintain precision under pointwise evaluation, unlike grid-based numerical methods."
+  }
+]

@@ -1,0 +1,8 @@
+{
+  "method": "FDM",
+  "N": 100,
+  "combined_score": 0.99997939578455,
+  "mean_pde_residual": 1.983937792031185e-05,
+  "mean_bc_residual": 7.652620720640902e-07,
+  "runtime_seconds": 1.0693669319152832
+}

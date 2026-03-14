@@ -1,0 +1,26 @@
+{
+  "method": "Famou (LLM-guided Evolution)",
+  "description": "LLM-guided evolutionary algorithm with 2 rounds of evolution",
+  "validity": 1,
+  "combined_score": 0.8805,
+  "cost_time": 0.0122,
+  "rounds": 2,
+  "best_program": "programs/round-2-best.py",
+  "experiment_id": "exp-20260314124458-smndl2",
+  "round_details": [
+    {
+      "round": 1,
+      "experiment_id": "exp-20260314112524-p3aqyn",
+      "initial_score": 0.53,
+      "final_score": 0.88,
+      "generations": 19
+    },
+    {
+      "round": 2,
+      "experiment_id": "exp-20260314124458-smndl2",
+      "initial_score": 0.88,
+      "final_score": 0.8805,
+      "generations": 1
+    }
+  ]
+}

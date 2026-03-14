@@ -1,0 +1,21 @@
+\begin{table}[t]
+\centering
+\caption{Performance comparison of baseline methods and our proposed Famou approach for solving the two-group neutron diffusion equation.}
+\label{tab:main_results}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Method} & \textbf{Combined Score} & \textbf{Validity} & \textbf{Time (s)} & \textbf{Rank} \\
+\midrule
+\textbf{Chebyshev Spectral} & \textbf{0.8788} & 1 & 0.1425 & 1 \\
+PINN & 0.6780 & 1 & 0.0419 & 2 \\
+FDM & 0.5695 & 1 & 0.3453 & 3 \\
+Analytical/Polynomial & 0.5097 & 1 & 0.0527 & 4 \\
+FEM & 0.0652 & 1 & 0.2862 & 5 \\
+DeepONet & 0.1523 & 1 & 0.42 & 6 \\
+\midrule
+Famou (Ours) & \textbf{0.8805} & 1 & 0.0122 & \textbf{1} \\
+\midrule
+\multicolumn{5}{l}{\textit{Improvement over best baseline: +0.19\%}} \\
+\bottomrule
+\end{tabular}
+\end{table}

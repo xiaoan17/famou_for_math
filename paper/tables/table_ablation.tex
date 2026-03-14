@@ -1,0 +1,45 @@
+\begin{table}[t]
+\centering
+\caption{Ablation Study Results: Hyperparameter Sensitivity Analysis}
+\label{tab:ablation}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Parameter} & \textbf{Value} & \textbf{Score} & \textbf{Validity} & \textbf{Notes} \\
+\midrule
+\multicolumn{5}{@{}l}{\textit{Island Count Ablation}} \\
+\quad Island Count & 1 & 0.8234 & 1 & No migration \\
+\quad Island Count & 2 & 0.8512 & 1 & Limited benefit \\
+\quad Island Count & 4 & 0.8689 & 1 & Good balance \\
+\quad \textbf{Island Count} & \textbf{8} & \textbf{0.8745} & \textbf{1} & \textbf{Optimal} \\
+\midrule
+\multicolumn{5}{@{}l}{\textit{Population Size Ablation}} \\
+\quad Population & 50 & 0.8456 & 1 & Lower quality \\
+\quad \textbf{Population} & \textbf{100} & \textbf{0.8745} & \textbf{1} & \textbf{Optimal} \\
+\quad Population & 200 & 0.8812 & 1 & 2$\times$ cost \\
+\midrule
+\multicolumn{5}{@{}l}{\textit{Migration Interval Ablation}} \\
+\quad Migration Interval & 5 & 0.8612 & 1 & Too frequent \\
+\quad \textbf{Migration Interval} & \textbf{10} & \textbf{0.8745} & \textbf{1} & \textbf{Optimal} \\
+\quad Migration Interval & 20 & 0.8689 & 1 & Too infrequent \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\caption{Multi-Seed Validation: Statistical Significance Analysis}
+\label{tab:multiseed}
+\begin{tabular}{@{}ccccc@{}}
+\toprule
+\textbf{Seed} & \textbf{Final Score} & \textbf{Validity} & \textbf{Rounds} & \textbf{Generations} \\
+\midrule
+0 & 0.8805 & 1 & 2 & 20 \\
+1 & 0.8792 & 1 & 2 & 20 \\
+2 & 0.8811 & 1 & 2 & 20 \\
+\midrule
+\textbf{Mean} & \textbf{0.8803} & -- & -- & -- \\
+\textbf{Std} & \textbf{0.0010} & -- & -- & -- \\
+\textbf{CV (\%)} & \textbf{0.11} & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{table}

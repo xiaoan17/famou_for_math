@@ -1,0 +1,16 @@
+\begin{table}[t]
+\centering
+\caption{Detailed configurations of baseline methods.}
+\label{tab:baseline_details}
+\begin{tabular}{lp{6cm}c}
+\toprule
+\textbf{Method} & \textbf{Parameters} & \textbf{Description} \\
+\midrule
+Chebyshev Spectral & N=30, n_points=31, method=collocation & Chebyshev spectral collocation method with N=30 \\
+PINN & hidden_dim=32, num_layers=2, activation=tanh & Physics-Informed Neural Network with 32 hidden units, 2 layers \\
+FDM & nx=101, ny=101, grid_spacing_x=0.01, grid_spacing_y=0.01 & Finite Difference Method with 101x101 grid \\
+Analytical/Polynomial & degree=8, basis=polynomial & Polynomial approximation with degree 8 \\
+FEM & nx=65, ny=65, element_type=bilinear & Finite Element Method with 65x65 mesh \\
+\bottomrule
+\end{tabular}
+\end{table}

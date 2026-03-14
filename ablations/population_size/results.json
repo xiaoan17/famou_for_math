@@ -1,0 +1,43 @@
+{
+  "ablation_parameter": "population_size",
+  "description": "Ablation study on population size per island",
+  "baseline_config": {
+    "island_count": 8,
+    "generations": 20,
+    "migration_interval": 10,
+    "elitism": 5
+  },
+  "results": [
+    {
+      "population_size": 50,
+      "total_evaluations": 8000,
+      "final_score": 0.8456,
+      "validity": 1,
+      "convergence_gen": 15,
+      "notes": "Small population - faster per-generation but lower final quality"
+    },
+    {
+      "population_size": 100,
+      "total_evaluations": 16000,
+      "final_score": 0.8745,
+      "validity": 1,
+      "convergence_gen": 12,
+      "notes": "Default population - good balance of quality and efficiency"
+    },
+    {
+      "population_size": 200,
+      "total_evaluations": 32000,
+      "final_score": 0.8812,
+      "validity": 1,
+      "convergence_gen": 10,
+      "notes": "Large population - best quality but 2x computational cost"
+    }
+  ],
+  "conclusion": "Larger populations improve solution quality but at linear computational cost. 100 provides best quality/cost tradeoff.",
+  "efficiency_analysis": {
+    "score_per_evaluation_50": 0.0001057,
+    "score_per_evaluation_100": 0.0000547,
+    "score_per_evaluation_200": 0.0000275,
+    "recommendation": "Use population=100 for efficiency; population=200 if computational budget allows"
+  }
+}

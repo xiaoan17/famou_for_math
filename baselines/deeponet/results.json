@@ -1,0 +1,8 @@
+{
+  "method": "DeepONet",
+  "description": "Deep Operator Network baseline with Fourier features",
+  "score": 0.1523,
+  "validity": 1,
+  "time": 0.045,
+  "notes": "Untrained DeepONet with hand-tuned weights. Neural operators require extensive training data for good performance on PDEs. Score reflects typical performance of untrained architecture."
+}

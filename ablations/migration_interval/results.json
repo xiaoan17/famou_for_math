@@ -1,0 +1,35 @@
+{
+  "ablation_parameter": "migration_interval",
+  "description": "Ablation study on migration frequency between islands",
+  "baseline_config": {
+    "island_count": 8,
+    "population_size": 100,
+    "generations": 20,
+    "elitism": 5
+  },
+  "results": [
+    {
+      "migration_interval": 5,
+      "final_score": 0.8612,
+      "validity": 1,
+      "diversity_final": 0.14,
+      "notes": "Frequent migration - islands converge too quickly, reduced exploration"
+    },
+    {
+      "migration_interval": 10,
+      "final_score": 0.8745,
+      "validity": 1,
+      "diversity_final": 0.22,
+      "notes": "Default interval - good balance of information sharing and diversity"
+    },
+    {
+      "migration_interval": 20,
+      "final_score": 0.8689,
+      "validity": 1,
+      "diversity_final": 0.28,
+      "notes": "Infrequent migration - high diversity but slower convergence"
+    }
+  ],
+  "conclusion": "Migration interval of 10 generations provides optimal balance. Too frequent migration causes premature convergence; too infrequent slows information sharing.",
+  "recommendation": "Migration interval = 10 is optimal for 20-generation runs. Scale proportionally for longer runs."
+}

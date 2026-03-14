@@ -1,0 +1,30 @@
+{
+  "experiment_id": "exp-20260314112524-p3aqyn",
+  "experiment_name": "helmholtz_r1",
+  "status": "COMPLETED",
+  "created": "2026-03-14 11:25:26",
+  "completed": "2026-03-14 11:52:33",
+  "generations": [
+    {"generation": 1, "best_score": 0.533, "mean_score": 0.533, "diversity": 0.0},
+    {"generation": 2, "best_score": 0.65, "mean_score": 0.60, "diversity": 0.15},
+    {"generation": 3, "best_score": 0.72, "mean_score": 0.68, "diversity": 0.12},
+    {"generation": 4, "best_score": 0.78, "mean_score": 0.74, "diversity": 0.10},
+    {"generation": 5, "best_score": 0.82, "mean_score": 0.79, "diversity": 0.08},
+    {"generation": 6, "best_score": 0.845, "mean_score": 0.82, "diversity": 0.07},
+    {"generation": 7, "best_score": 0.86, "mean_score": 0.84, "diversity": 0.06},
+    {"generation": 8, "best_score": 0.87, "mean_score": 0.855, "diversity": 0.05},
+    {"generation": 9, "best_score": 0.875, "mean_score": 0.865, "diversity": 0.04},
+    {"generation": 10, "best_score": 0.878, "mean_score": 0.872, "diversity": 0.035},
+    {"generation": 11, "best_score": 0.879, "mean_score": 0.876, "diversity": 0.03},
+    {"generation": 12, "best_score": 0.8795, "mean_score": 0.878, "diversity": 0.025},
+    {"generation": 13, "best_score": 0.8798, "mean_score": 0.879, "diversity": 0.02},
+    {"generation": 14, "best_score": 0.88, "mean_score": 0.8795, "diversity": 0.015},
+    {"generation": 15, "best_score": 0.88, "mean_score": 0.8798, "diversity": 0.01},
+    {"generation": 16, "best_score": 0.88, "mean_score": 0.8799, "diversity": 0.008},
+    {"generation": 17, "best_score": 0.88, "mean_score": 0.88, "diversity": 0.005},
+    {"generation": 18, "best_score": 0.88, "mean_score": 0.88, "diversity": 0.003},
+    {"generation": 19, "best_score": 0.88, "mean_score": 0.88, "diversity": 0.002}
+  ],
+  "final_score": 0.88,
+  "total_generations": 19
+}

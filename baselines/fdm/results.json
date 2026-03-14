@@ -1,0 +1,24 @@
+{
+  "method": "FDM",
+  "description": "Finite Difference Method with 101x101 grid",
+  "validity": 1,
+  "combined_score": 0.569491,
+  "cost_time": 0.3453,
+  "error_info": "",
+  "parameters": {
+    "nx": 101,
+    "ny": 101,
+    "grid_spacing_x": 0.01,
+    "grid_spacing_y": 0.01
+  },
+  "physical_constants": {
+    "D1": 1.0,
+    "D2": 0.5,
+    "Sigma_R": 0.02,
+    "Sigma_A2": 0.1,
+    "nu": 2.5,
+    "Sigma_F1": 0.005,
+    "Sigma_F2": 0.1,
+    "Sigma_12": 0.015
+  }
+}
